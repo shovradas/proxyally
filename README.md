@@ -1,2 +1,2 @@
-# proxy-fellow
-An aggregator for different source of proxies
+# proxy-ally
+An aggregator for different sources of proxies
