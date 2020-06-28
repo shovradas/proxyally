@@ -1,0 +1,50 @@
+<div class="card-body">
+    <dl class="row mb-0">
+        <dt class="col-sm-3">
+            Source
+        </dt>
+        <dd class="col-sm-9">
+            <a href="{{url_for('provider_details', id=provider['id'])}}">
+                <span id="proxyProvider"></span>
+            </a>
+        </dd>
+        <dt class="col-sm-3">
+            Proxy Server
+        </dt>
+        <dd class="col-sm-9">
+            <a id="proxyDetailUrl" href="#">
+                <span id="proxyIp"></span>:<span id="proxyPort"></span>
+            </a>            
+        </dd>
+        <dt class="col-sm-3">
+            Last Functional
+        </dt>
+        <dd class="col-sm-9" title="date of the last successful basic functionality test">
+            <span id="proxyFuncTestDate"></span>
+        </dd>
+        <dt class="col-sm-3">
+            Anonymity Level
+        </dt>
+        <dd class="col-sm-9">
+            <span id="proxyAnonymity"></span>
+        </dd>
+        <dt class="col-sm-3">
+            Last Found
+        </dt>
+        <dd class="col-sm-9" title="date when the address was last found in any proxy list">
+            <span id="proxyLastFoundDate"></span>
+        </dd>
+        <dt class="col-sm-3">
+            First Discovered
+        </dt>
+        <dd class="col-sm-9" title="date when the address was first found in any proxy list">
+            <span id="proxyDiscoveredDate"></span>
+        </dd>     
+    </dl>
+    <div id="proxyTesturls" title="for each available test URL the date of the last successful functionality test">
+        <div class="font-weight-bold mb-2">Tested URLs</div>
+        <p>
+            None
+        </p>
+    </div>
+</div>

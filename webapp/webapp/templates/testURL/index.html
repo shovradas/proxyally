@@ -1,0 +1,179 @@
+{% extends "layout.html" %}
+
+{% block content %}
+
+<h2 class="mb-4"><i class="fas fa-link"></i> {{ title }}</h2>
+
+<nav class="navbar navbar-expand-sm navbar-dark bg-proxyally py-0">
+    <ul class="navbar-nav">
+        <li class="nav-item">
+            <a class="nav-link text-white" data-toggle="modal" data-target="#addModal"><i class="fas fa-plus"></i> Add New</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link text-white" href="{{ url_for('testurl_index') }}"><i class="fas fa-retweet"></i> Refresh</a>
+        </li>
+    </ul>
+    <div class="navbar-text ml-auto">
+        <button class="btn btn-primary"><i class="fas fa-check-double"></i> Validate All</button>
+    </div>
+</nav>
+
+<div class="border my-4 p-4">
+    <div class="table-responsive-sm">
+        <table class="table table-hover" id="dataTable">
+            <thead>
+                <tr>
+                    <th>
+                        URL
+                    </th>
+                    <th>
+                        Details
+                    </th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in testurls['items'] %}
+                <tr>
+                    <td>
+                        <a href="{{ url_for('testurl_details', id=item['id']) }}" title="Details">{{item['url']}}</a>
+                    </td>
+                    <td>
+                        {{item['description']}}
+                    </td>
+                    <td class="text-right">
+                        <div class="btn-group btn-group-lg">
+                            <a href="{{ url_for('testurl_details', id=item['id']) }}" class="btn btn-light" data-toggle="tooltip" title="Details"><i class="fas fa-file-alt text-proxyally"></i></a>
+                            <a class="btn btn-light" data-toggle="tooltip" onclick="validateTestUrl({{item['id']}})" title="Validate Proxies"><i class="fas fa-check-double text-primary"></i></a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Add Modal -->
+<div class="modal fade" id="addModal">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+
+            <!-- Modal Header -->
+            <div class="modal-header text-proxyally">
+                <h4 class="modal-title"><i class="fas fa-plus"></i> Add New Test URL</h4>
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+            </div>
+
+            <!-- Modal body -->
+            <div class="modal-body">
+                <div class="card-body">
+                    <div class="form-group">
+                        <label for="testurl">URL</label>
+                        <div class="input-group mb-3">
+                            <input type="text" class="form-control" placeholder="Enter test url" id="testurl" name="testurl">
+                            <div class="input-group-append">
+                                <a id="pasteButton" class="btn btn-light border" href="#" onclick="readFromClipboard()" data-toggle="tooltip" title="Click to paste from clipboard"><i class="fas fa-paste text-proxyally"></i></a>
+                            </div>
+                        </div>
+                        <div id="urlError" class="mb-3"></div>
+                    </div>                    
+                    <div class="form-group">
+                        <label for="description">Description</label>s
+                        <textarea class="form-control" placeholder="Any remark" id="description" name="description" rows="8"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal footer -->
+            <div class="modal-footer bg-proxyally-light">
+                <button id="submit" type="button" class="btn btn-primary btn-proxyally">Save</button>
+                <button type="button" class="btn btn-dark" data-dismiss="modal">Close</button>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
+{% block scripts %}
+<script src="/static/lib/datatables/jquery.dataTables.min.js"></script>
+<script src="/static/lib/datatables/dataTables.bootstrap4.min.js"></script>
+<script>
+    var resourceUrl = 'http://localhost:5001/api/v1/testurls';
+
+    function readFromClipboard() {
+        return navigator.clipboard.readText().then(
+            result => {
+                //console.log("Successfully retrieved text from clipboard", result)
+                elem = document.querySelector('#testurl');
+                elem.value = result;
+                return Promise.resolve(result);
+            }
+        )
+            .catch(
+                err => {
+                    console.log("Error! read text from clipbaord", err)
+                })
+    }
+    $(document).ready(function () {
+        $('#dataTable').DataTable({
+            columnDefs: [
+                { orderable: false, targets: [-1] }
+            ]
+        });
+    });
+    function showUrlError() {
+        $('#testurl').parent().attr('style', 'border: 1px solid red');
+        $('#urlError').show();
+        $('#urlError').html('<font color="red">Please enter a valid URL</font>');
+    }
+    $(function () {
+        $('#testurl').click(function () {
+            $('#testurl').parent().attr('style', '');
+            $('#urlError').hide();
+        });
+
+        $('#submit').click(function (e) {
+            if (!isValidURL($('#testurl').val())) {
+                showUrlError();
+                return;
+            }
+
+            data = {
+                url: $('#testurl').val(),
+                description: $('#description').val()
+            };
+
+            $.ajax({
+                url: resourceUrl,
+                method: 'post',
+                data: data,
+                headers: { ContentType: 'application/json' },
+                success: function (data) {
+                    if (data.errors) {
+                        raiseApiValidationError(data.errors);
+                    } else {
+                        alert_bs('New URL added successfully!', 'success');
+                        location.reload();
+                    }
+                },
+                error: function (err) { window.alert('Error :: ' + err.statusText); }
+            });
+        });
+    });
+
+    function validateTestUrl(id){
+        //$.ajax({
+        //    url: [resourceUrl, "/", id].join(''),
+        //    method: 'DELETE',
+        //    headers: { ContentType: 'application/json' },
+        //    success: function (data) {
+        //        location.reload();
+        //    },
+        //    error: function (err) { window.alert('Error :: ' + err.statusText); }
+        //});
+    }
+</script>
+{% endblock %}

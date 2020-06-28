@@ -1,0 +1,166 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ title }} - ProxyAlly</title>
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
+    <link href="/static/lib/fontawesome/css/all.css" rel="stylesheet">
+    <link rel="stylesheet" href="/static/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link href="/static/lib/datatables/dataTables.bootstrap4.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="/static/css/site.css" />
+</head>
+<body>
+    <header>
+        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
+            <div class="container">
+                <a class="navbar-brand text-proxyally" href="{{ url_for('home') }}">
+                    <i class="fas fa-plug"></i> ProxyAlly
+                </a>
+                <button class="navbar-toggler" type="button" data-toggle="collapse" data-target=".navbar-collapse" aria-controls="navbarSupportedContent"
+                        aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="navbar-collapse collapse d-sm-inline-flex flex-sm-row-reverse">
+                    <ul class="navbar-nav flex-grow-1 justify-content-end">
+                        <!-- Dropdown -->
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle text-proxyally" href="#" id="navbardrop" data-toggle="dropdown">
+                                <i class="fas fa-tools"></i> Manage
+                            </a>
+                            <div class="dropdown-menu">
+                                <a class="dropdown-item" href="{{ url_for('provider_index') }}"><i class="fas fa-handshake"></i> Provider</a>
+                                <a class="dropdown-item" href="{{ url_for('testurl_index') }}"><i class="fas fa-link"></i> Test URLs</a>
+                                <div class="dropdown-divider"></div>
+                                <a class="dropdown-item"  data-toggle="modal" data-target="#settingsModal"><i class="fas fa-cog"></i> Settings</a>
+                            </div>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-proxyally" data-toggle="modal" data-target="#loginModal"><i class="fas fa-sign-in-alt"></i> Login</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </header>
+    <div class="container-fluid">
+        <main role="main" class="py-3">
+            <div class="row">
+                <div class="col-md">
+                    {% block sidebar_left %}{% endblock %}
+                </div>
+                <div class="col-md-7 container">
+                    {% block content %}{% endblock %}
+                </div>
+                <div class="col-md">
+                    {% block sidebar_right %}{% endblock %}
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <footer class="border-top footer text-muted">
+        <div class="container">
+            &copy; 2020 - ProxyAlly - <a href="{{ url_for('about') }}">About</a> | <a href="{{ url_for('privacy') }}">Privacy</a> | <a href="{{ url_for('contact') }}">Contact</a>
+        </div>
+    </footer>
+
+    <!-- Login Modal -->
+    <div class="modal fade" id="loginModal">
+        <div class="modal-dialog">
+            <div class="modal-content">
+
+                <!-- Modal Header -->
+                <div class="modal-header text-proxyally">
+                    <h4 class="modal-title"><i class="fas fa-sign-in-alt"></i> Login</h4>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+
+                <!-- Modal body -->
+                <div class="modal-body">
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label for="email">Email address:</label>
+                            <input type="email" class="form-control" placeholder="Enter email" id="email" name="email">
+                        </div>
+                        <div class="form-group">
+                            <label for="password">Password:</label>
+                            <input type="password" class="form-control" placeholder="Enter password" id="password" name="password">
+                        </div>
+                        <div class="custom-control custom-checkbox">
+                            <input type="checkbox" class="custom-control-input" id="remember" name="remember">
+                            <label class="custom-control-label" for="remember">Remember Me</label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Modal footer -->
+                <div class="modal-footer bg-proxyally-light">
+                    <button id="edit" type="button" class="btn btn-primary btn-proxyally">Submit</button>
+                    <button type="button" class="btn btn-dark" data-dismiss="modal">Close</button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Proxy Detail Modal -->
+    <div class="modal fade" id="settingsModal">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+
+                <!-- Modal Header -->
+                <div class="modal-header text-proxyally">
+                    <h4 class="modal-title"><i class="fas fa-cog"></i> Settings</h4>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+
+                <!-- Modal body -->
+                <div class="modal-body">
+                    {% include 'settings.html' %}
+                </div>
+
+                <!-- Modal footer -->
+                <div class="modal-footer bg-proxyally-light">
+                    <button id="saveSettings" type="button" class="btn btn-primary btn-proxyally">Save</button>
+                    <button type="button" class="btn btn-dark" data-dismiss="modal">Close</button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- The Modal -->
+    <div class="modal bg-proxyally-light" id="messageModal">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <!-- Modal Header -->
+                <div class="modal-header">
+                    <h4 class="modal-title"><i class="fas fa-info-circle"></i> Message</h4>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+                <!-- Modal body -->
+                <div class="modal-body px-5">
+                    The Message text goes here
+                </div>
+                <!-- Modal footer -->
+                <div class="modal-footer">
+                    <button id="modalCloseButton" type="button" class="btn btn-dark" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/lib/jquery/dist/jquery.min.js"></script>
+    <script src="/static/lib/underscore/underscore.js"></script>
+    <script src="/static/lib/timeago/jquery.timeago.js"></script>
+    <script src="/static/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            $('[data-toggle="tooltip"]').tooltip();
+        });
+    </script>
+    {% block scripts %}{% endblock %}
+    <script src="/static/js/site.js"></script>
+</body>
+</html>

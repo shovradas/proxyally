@@ -1,0 +1,242 @@
+{% extends "layout.html" %}
+
+{% block content %}
+
+<h2 class="mb-4"><i class="fas fa-link"></i> {{ title }}</h2>
+
+<nav class="navbar navbar-expand-sm navbar-dark bg-proxyally py-0">
+    <ul class="navbar-nav">
+        <li class="nav-item">
+            <a class="nav-link text-white" href="{{ url_for('testurl_index') }}"><i class="fas fa-table"></i> Back To List</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link text-white" data-toggle="modal" data-target="#editModal"><i class="fas fa-edit"></i> Edit</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link text-white" data-toggle="modal" data-target="#deleteModal"><i class="fas fa-trash"></i> Delete</a>
+        </li>
+    </ul>
+    <div class="navbar-text ml-auto">
+        <button class="btn btn-primary"><i class="fas fa-check-double"></i> Validate Now</button>
+    </div>
+</nav>
+
+<div class="card my-3">
+    <div class="card-body">
+        <dl class="row mt-md-2">
+            <dt class="col-sm-1">
+                URL
+            </dt>
+            <dd class="col-sm-11" title="base address (URL) of the proxy list" id="testurl">
+                {{testurl['url']}}
+            </dd>
+            <dt class="col-sm-1">
+                Details
+            </dt>
+            <dd class="col-sm-11" title="base address (URL) of the proxy list" id="description">
+                {{testurl['description']}}
+            </dd>
+        </dl>
+
+        <h4 class="text-center text-proxyally">
+            - Validated Proxies -
+        </h4>
+        <div class="table-responsive-sm pt-3">
+            <table class="table table-hover border-bottom" id="dataTable">
+                <thead>
+                    <tr>
+                        <th>
+                            Proxy
+                        </th>
+                        <th>
+                            Anonymity Level
+                        </th>
+                        <th>
+                            Last Checked
+                        </th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="dataTable">
+                    {% for proxy in testurl['proxies'] %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('proxy_details', id=proxy['id']) }}" data-toggle="tooltip" title="Details"><i class="fas fa-server fa-sm"></i> {{proxy['ip']}}:{{proxy['port']}}</a>
+                        </td>
+                        <td>
+                            {{proxy['anonymity'] or 'Not determined yet'}}
+                        </td>
+                        <td>
+                            {{proxy['funcTestDate']|timeago_fromiso or 'Not tested yet'}}
+                        </td>
+                        <td class="text-right">
+                            <div class="btn-group btn-group-lg">
+                                <a href="{{ url_for('proxy_details', id=proxy['id']) }}" class="btn btn-light" data-toggle="tooltip" title="See details"><i class="fas fa-file-alt text-proxyally"></i></a>
+                                <a class="btn btn-light" data-toggle="tooltip" title="This proxy has become stale. Test now?" onclick="showProxyDetail({{proxy}})"><i class="fas fa-check text-{{'primary' if 'funcTestDate' in proxy else 'danger'}}"></i></a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="card-footer bg-proxyally-light">
+        <div class="py-3 mt-1"></div>
+    </div>
+</div>
+
+
+<!-- Edit Modal -->
+<div class="modal fade" id="editModal">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+
+            <!-- Modal Header -->
+            <div class="modal-header text-proxyally">
+                <h4 class="modal-title"><i class="fas fa-edit"></i> Edit this URL</h4>
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+            </div>
+
+            <!-- Modal body -->
+            <div class="modal-body">
+                <div class="card-body">
+                    <div class="form-group">
+                        <label for="testurl_edit">URL</label>
+                        <div class="input-group mb-3">
+                            <input type="text" class="form-control" placeholder="Enter test url" id="testurl_edit" name="testurl_edit">
+                            <div class="input-group-append">
+                                <a id="pasteButton" class="btn btn-light border" href="#" onclick="readFromClipboard()" data-toggle="tooltip" title="Click to paste from clipboard"><i class="fas fa-paste text-proxyally"></i></a>
+                            </div>
+                        </div>
+                        <div id="urlError"></div>
+                    </div>                    
+                    <div class="form-group">
+                        <label for="description_edit">Description</label>s
+                        <textarea class="form-control" placeholder="Any remark" id="description_edit" name="description_edit" rows="8"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal footer -->
+            <div class="modal-footer bg-proxyally-light">
+                <button id="edit" type="button" class="btn btn-primary btn-proxyally">Confirm</button>
+                <button type="button" class="btn btn-dark" data-dismiss="modal">Cancel</button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+<!-- Delete Modal -->
+<div class="modal fade" id="deleteModal">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+
+            <!-- Modal Header -->
+            <div class="modal-header">
+                <h4 class="modal-title"><i class="fas fa-trash"></i> Confirm Delete</h4>
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+            </div>
+
+            <!-- Modal body -->
+            <div class="modal-body">
+                <h5 class=" text-center"><i class="fas fa-exclamation-triangle text-warning"> </i> Are you sure want to delete this URL?</h5>
+</div>
+
+            <!-- Modal footer -->
+            <div class="modal-footer bg-proxyally-light">
+                <button id="delete" type="button" class="btn btn-danger">Confirm</button>
+                <button type="button" class="btn btn-dark" data-dismiss="modal">Close</button>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
+{% block scripts %}
+<script src="/static/lib/datatables/jquery.dataTables.min.js"></script>
+<script src="/static/lib/datatables/dataTables.bootstrap4.min.js"></script>
+<script>   
+    var resourceUrl = 'http://localhost:5001/api/v1/testurls';
+
+    function readFromClipboard() {
+        return navigator.clipboard.readText().then(
+            result => {
+                //console.log("Successfully retrieved text from clipboard", result)
+                elem = document.querySelector('#testurl_edit');
+                elem.value = result;
+                return Promise.resolve(result);
+            }
+        )
+            .catch(
+                err => {
+                    console.log("Error! read text from clipbaord", err)
+                })
+    }
+
+    $(document).ready(function () {
+        $('#dataTable').DataTable({
+            columnDefs: [
+                { orderable: false, targets: [-1] }
+            ]
+        });
+    }); 
+    function showUrlError() {
+        $('#testurl_edit').parent().attr('style', 'border: 1px solid red');
+        $('#urlError').show();
+        $('#urlError').html('<font color="red">Please enter a valid URL</font>');
+    }
+    $(function () {
+        $('#editModal').on('shown.bs.modal', function () {
+            $('#testurl_edit').val($('#testurl').text().trim());
+            $('#description_edit').val($('#description').text().trim());
+        });
+
+        $('#testurl_edit').click(function () {
+            $('#testurl_edit').parent().attr('style', '');
+            $('#urlError').hide();
+        });
+
+        $('#edit').click(function () {
+            if (!isValidURL($('#testurl_edit').val())) {
+                showUrlError();
+                return;
+            }
+            data = {
+                url: $('#testurl_edit').val(),
+                description: $('#description_edit').val()
+            };
+            $.ajax({
+                url: resourceUrl + "/{{testurl['id']}}",
+                method: 'PUT',
+                data: data,
+                headers: { ContentType: 'application/json' },
+                success: function (data) {
+                    $('#testurl').text($('#testurl_edit').text().trim());
+                    $('#description').text($('#description_edit').text().trim());
+                    window.alert('URL updated successfully!');
+                },
+                error: function (err) { window.alert('Error :: ' + err.statusText); }
+            });
+        });
+
+        $('#delete').click(function () {            
+                $.ajax({
+                    url: resourceUrl + "/{{testurl['id']}}",
+                    method: 'DELETE',
+                    headers: { ContentType: 'application/json' },
+                    success: function (data) {
+                        alert_bs('Deleted successfully', 'success');
+                        window.location = "{{url_for('testurl_index')}}"
+                    },
+                    error: function (err) { window.alert('Error :: ' + err.statusText); }
+                });
+        });
+
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,250 @@
+﻿{% extends "layout.html" %}
+
+{% block content %}
+
+<h2 class="mb-4"><i class="fas fa-handshake"></i> {{ title }}</h2>
+
+<nav class="navbar navbar-expand-sm navbar-dark bg-proxyally py-0">
+    <ul class="navbar-nav">
+        <li class="nav-item">
+            <a class="nav-link text-white" data-toggle="modal" data-target="#addModal"><i class="fas fa-plus"></i> Add New</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link text-white" href="#"><i class="fas fa-retweet"></i> Refresh</a>
+        </li>
+    </ul>
+    <div class="navbar-text ml-auto">
+        <button class="btn btn-primary"><i class="fas fa-sync-alt"></i> Sync All</button>
+    </div>
+</nav>
+
+<div class="border my-4 p-4">
+    <div class="table-responsive-sm">
+        <table class="table table-hover" id="dataTable">
+            <thead>
+                <tr>
+                    <th>
+                        Offered by
+                    </th>
+                    <th>
+                        Base Address
+                    </th>
+                    <th>
+                        Available Proxies
+                    </th>
+                    <th>Last Actions</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in providers['items'] %}
+                <tr>
+                    <td>
+                        <a href="{{ url_for('provider_details', id=item['id']) }}" title="Details">{{item['name']}}</a>
+                    </td>
+                    <td>
+                        {{item['baseAddress']}}
+                    </td>
+                    <td>
+                        {{ item['proxies']|length }}
+                    </td>
+                    <td>
+                        {% if 'updateAttempt' in item %}
+                            {% if item['updateAttempt']['type']=='syncDB' %}                                
+                                <i class="fas fa-plug text-{{'success' if item['updateAttempt']['status']=='success' else 'warning'}}" title="{{'' if item['updateAttempt']['status']=='success' else item['updateAttempt']['message']}}"></i> Sync
+                                <br/>
+                                <small title="{{item['updateAttempt']['attemptDate']}}">{{item['updateAttempt']['status']}} - {{item['updateAttempt']['attemptDate']|timeago_fromiso}}</small>
+                                <br/>
+                                <small class="border-top pt-0 mt-0">{{['synced: ', item['updateAttempt']['proxyCount']]|join('') if item['updateAttempt']['status']=='success' else ''}}</small>
+                            {% elif item['updateAttempt']['type']=='funcTest' %}
+                                <i class="fas fa-plug text-{{'success' if item['updateAttempt']['status']=='success' else 'warning'}}" title="{{'' if item['updateAttempt']['status']=='success' else item['updateAttempt']['message']}}"></i> Funtionality Test
+                                <br/>
+                                <small title="{{item['updateAttempt']['attemptDate']}}">{{item['updateAttempt']['status']}} - {{item['updateAttempt']['attemptDate']|timeago_fromiso}}</small>
+                                <br/>
+                                <small class="border-top pt-0 mt-0">{{['tested: ', item['updateAttempt']['proxyCount']]|join('') if item['updateAttempt']['status']=='success' else ''}}</small>
+                            {% elif item['updateAttempt']['type']=='fetch' %}
+                                <i class="fas fa-plug text-{{'success' if item['updateAttempt']['status']=='success' else 'warning'}}" title="{{'' if item['updateAttempt']['status']=='success' else item['updateAttempt']['message']}}"></i> Fetch
+                                <br/>
+                                <small title="{{item['updateAttempt']['attemptDate']}}">{{item['updateAttempt']['status']}} - {{item['updateAttempt']['attemptDate']|timeago_fromiso}}</small>
+                                <br/>
+                                <small class="border-top pt-0 mt-0">{{['fetched: ', item['updateAttempt']['proxyCount']]|join('') if item['updateAttempt']['status']=='success' else ''}}</small>
+                            {% endif %}
+                        {% else %}
+                            None
+                        {% endif %}
+                    </td>
+                    <td class="text-right">
+                        <div class="btn-group btn-group-lg">
+                            <a href="{{ url_for('provider_details', id=item['id']) }}" class="btn btn-light" data-toggle="tooltip" title="Details"><i class="fas fa-file-alt text-proxyally"></i></a>
+                            <a class="btn btn-light" data-toggle="tooltip" title="Sync proxies from provider"><i class="fas fa-sync-alt text-{{'primary' if 'updateAttempt' in item and item['updateAttempt']['status']=='success' else 'danger'}}"></i></a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+<!-- Add Modal -->
+<div class="modal fade" id="addModal">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+
+            <!-- Modal Header -->
+            <div class="modal-header text-proxyally">
+                <h4 class="modal-title"><i class="fas fa-plus"></i> Add New Provider</h4>
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+            </div>
+
+            <!-- Modal body -->
+            <div class="modal-body">
+                <div class="card-body">
+                    <div class="form-group">
+                        <label for="baseAddress">Base Address</label>
+
+                        <div class="input-group mb-3">
+                            <input type="text" class="form-control" placeholder="Enter proxy list provider's address" id="baseAddress" name="baseAddress">
+                            <div class="input-group-append">
+                                <a id="pasteButton" class="btn btn-light border" href="#" onclick="readFromClipboard()" data-toggle="tooltip" title="Click to paste from clipboard"><i class="fas fa-paste text-proxyally"></i></a>
+                            </div>
+                        </div>
+                        <div id="urlError" class="mb-3"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="name">Name <i class="fas fa-info-circle text-proxyally" title="Optional field :: Auto-generated if not provided" data-toggle="tooltip"></i></label>
+                        <input type="text" class="form-control" placeholder="Enter a friendly name" id="name" name="name">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="fetcher">Fetchers</label>
+                        <select id="fetcher" name="fetcher" class="custom-select">
+                            <option selected>Select Fetcher</option>
+                            <option value="freedashproxydashlistnet">freedashproxydashlistnet</option>
+                            <option value="freeproxylistsnet">freeproxylistsnet</option>
+                            <option value="proxy11com">proxy11com</option>
+                            <option value="proxydashlistdownload">proxydashlistdownload</option>
+                            <option value="proxynovacom">proxynovacom</option>
+                            <option value="spysone">spysone</option>
+                            <option value="xroxycom">xroxycom</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="instructions">Instructions</label>
+                        <textarea class="form-control" placeholder="Hints for extracting proxies from this list" id="instructions" name="instructions" rows="8"></textarea>
+                    </div>
+
+                    <div class="preview"></div>
+
+
+                    <div class="form-group">
+                        <label for="syncTestCheckBoxes">Proxies <i class="fas fa-info-circle text-proxyally" title="You can sync and test now or later" data-toggle="tooltip"></i></label>
+                        <div id="syncTestCheckBoxes" class="border p-2 mb-3">
+                            <div class="custom-control custom-radio custom-control-inline">
+                                <input type="radio" class="custom-control-input" id="syncTest1" name="syncTest" value="2">
+                                <label class="custom-control-label" for="syncTest1">Sync & Test Now</label>
+                            </div>
+                            <div class="custom-control custom-radio custom-control-inline">
+                                <input type="radio" class="custom-control-input" id="syncTest2" name="syncTest" value="1" checked>
+                                <label class="custom-control-label" for="syncTest2">Sync Now but Test Later</label>
+                            </div>
+                            <div class="custom-control custom-radio custom-control-inline">
+                                <input type="radio" class="custom-control-input" id="syncTest3" name="syncTest" value="0" checked>
+                                <label class="custom-control-label" for="syncTest3">Save for Later</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal footer -->
+            <div class="modal-footer bg-proxyally-light">
+                <button id="submit" type="button" class="btn btn-primary btn-proxyally">Save</button>
+                <button type="button" class="btn btn-dark" data-dismiss="modal">Close</button>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+
+{% block scripts %}
+<script src="/static/lib/datatables/jquery.dataTables.min.js"></script>
+<script src="/static/lib/datatables/dataTables.bootstrap4.min.js"></script>
+<script>
+    var resourceUrl = 'http://localhost:5001/api/v1/providers';
+
+    function readFromClipboard() {
+        return navigator.clipboard.readText().then(
+            result => {
+                //console.log("Successfully retrieved text from clipboard", result)
+                elem = document.querySelector('#baseAddress');
+                elem.value = result;
+                return Promise.resolve(result);
+            }
+        )
+            .catch(
+                err => {
+                    console.log("Error! read text from clipbaord", err)
+                })
+    }
+
+    $(document).ready(function () {
+        $('#dataTable').DataTable({
+            columnDefs: [
+                { orderable: false, targets: [-1] }
+            ]
+        });
+    });
+
+
+    function showUrlError() {
+        $('#baseAddress').parent().attr('style', 'border: 1px solid red; border-radius: 5px');
+        $('#urlError').show();
+        $('#urlError').html('<font color="red">Please enter a valid URL</font>');
+    }
+
+    $(function () {
+        $('#baseAddress').click(function () {
+            $('#baseAddress').parent().attr('style', '');
+            $('#urlError').hide();
+        });
+
+        $('#submit').click(function (e) {
+            if (!isValidURL($('#baseAddress').val())) {
+                showUrlError();
+                return;
+            }
+
+            data = {
+                name: $('#name').val(),
+                baseAddress: $('#baseAddress').val(),
+                fetcher: $('#fetcher').val(),
+                instructions: $('#instructions').val()
+            };
+
+            $.ajax({
+                url: resourceUrl,
+                method: 'post',
+                data: data,
+                headers: { ContentType: 'application/json' },
+                success: function (data) {
+                    alert(data)
+                    if (data.errors) {
+                        raiseApiValidationError(data.errors);
+                    } else if (data.status == 'error') {
+                        alert_bs(data.message, 'danger');
+                    }
+                    else {
+                        alert_bs('New Provider added successfully!', 'success');
+                        location.reload();
+                    }
+                },
+                error: function (err) { alert_bs(err.statusText, 'danger'); }
+            });
+        });
+    });
+</script>
+{% endblock %}

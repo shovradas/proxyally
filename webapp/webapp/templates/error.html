@@ -1,0 +1,15 @@
+{% extends "layout.html" %}
+
+{% block content %}
+
+<h2 class="text-danger mb-4"><i class="fas fa-exclamation-triangle"></i> {{ title }} 404</h2>
+
+<div class="jumbotron">
+    <h3 class="text-danger">{{ message }}</h3>
+    <p>
+        A more detail can be found here
+    </p>
+    <p><a href="{{ url_for('home')}}" class="btn btn-primary btn-large btn-proxyally">Continue &raquo;</a></p>
+</div>
+
+{% endblock %}
