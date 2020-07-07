@@ -86,6 +86,7 @@ ELITE_HEADERS = [
     'XROXY-CONNECTION'
 ]
 
+
 class HttpProxyChecker:
     def __init__(self, proxy_judges=None, ip_providers=None):
         self.proxy_judges = proxy_judges or PROXY_JUDGES
@@ -97,13 +98,14 @@ class HttpProxyChecker:
         ip = json.loads(resp)['ip']
         return ip
 
-    def send_request(self, url, proxy=None):
+    def send_request(self, url, proxy=None, timeout=5):
+        #print(timeout)
         response = BytesIO()
         c = pycurl.Curl()
 
         c.setopt(c.URL, url)
         c.setopt(c.WRITEDATA, response)
-        c.setopt(c.TIMEOUT, 5)
+        c.setopt(c.TIMEOUT, timeout)
 
         c.setopt(c.SSL_VERIFYHOST, 0)
         c.setopt(c.SSL_VERIFYPEER, 0)
@@ -116,6 +118,7 @@ class HttpProxyChecker:
             c.perform()
         except Exception as e:
             return False
+
 
         # Return False if the status is not 200
         if c.getinfo(c.HTTP_CODE) != 200:
@@ -133,25 +136,47 @@ class HttpProxyChecker:
         if any([header in judge_resp for header in privacy_headers]):
             return 'Anonymous'
 
-        #if any([header in judge_resp for header in ELITE_HEADERS]):
         return 'Elite'
 
-    def check_proxy(self, proxy):
-        judge_resp = self.send_request(url=random.choice(self.proxy_judges), proxy=f'http://{proxy}')
-        if not judge_resp:
-            return { 'status': 'offline'}
-        
+    def check_proxy(self, proxy, timeout=1):
+        judge_resp = self.send_request(url=random.choice(self.proxy_judges), proxy=f'http://{proxy}', timeout=timeout)
+        if not judge_resp: # False or empty
+            return {'status': 'offline'}
         return {
             'status': 'online', 
             'anonymity': self.determine_anonymity(judge_resp)
         }
 
+    def validate_proxy(self, proxy, test_url, timeout=1):
+        resp = self.send_request(url=test_url, proxy=f'http://{proxy}', timeout=timeout)
+        if resp == False: # False means not 200
+            return {'status': 'failed'}
+        return {'status': 'success'}
+
 
 if __name__ == '__main__':
     checker = HttpProxyChecker()
-    result = checker.check_proxy('52.179.231.206:80')
-    print(result)
-    #result = checker.check_proxy('88.199.21.76:80')
-    #print(result)
+    # p = '159.8.114.37:80'
+    #r = checker.check_proxy(p)
+    #print(r)
+    # r = checker.validate_proxy(p, 'https://www.google.com/')
+    # print(r)
+    # r = checker.validate_proxy(p, 'http://proxydb.net/')
+    # print(r)
+    # r = checker.validate_proxy(p, 'http://proxyjudge.us/azenv.php')
+    # print(r)
+    # r = checker.validate_proxy(p, 'http://shovradas.com/services/de_restricted.php')
+    # print(r)
+    # r = checker.validate_proxy(p, 'http://shovradas.com/services/de_only.php')
+    # print(r)
+
+    # p = '157.55.86.173:8080'
+    # result = checker.check_proxy(p) #  51.161.62.120:8080
+    # print(result)
+    # result = checker.validate_proxy(p, 'https://www.crackle.com')
+    # print(result)
+    # result = checker.send_request('https://www.crackle.com')
+    # print(result)
     #result = checker.check_proxy('87.199.21.76:80')
     #print(result)
+

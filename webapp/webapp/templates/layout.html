@@ -29,14 +29,13 @@
                                 <i class="fas fa-tools"></i> Manage
                             </a>
                             <div class="dropdown-menu">
-                                <a class="dropdown-item" href="{{ url_for('provider_index') }}"><i class="fas fa-handshake"></i> Provider</a>
+                                <a class="dropdown-item" href="{{ url_for('provider_index') }}"><i class="fas fa-handshake"></i> Providers</a>
                                 <a class="dropdown-item" href="{{ url_for('testurl_index') }}"><i class="fas fa-link"></i> Test URLs</a>
                                 <div class="dropdown-divider"></div>
-                                <a class="dropdown-item"  data-toggle="modal" data-target="#settingsModal"><i class="fas fa-cog"></i> Settings</a>
+                                <a class="dropdown-item" onclick="populateFetchersModal()"><i class="fas fa-cloud"></i> Fetchers</a>
+{#                              <a class="dropdown-item"  data-toggle="modal" data-target="#settingsModal"><i class="fas fa-cog"></i> Settings</a>#}
+                                <a class="dropdown-item" onclick="populateSettingsModal()"><i class="fas fa-cog"></i> Settings</a>
                             </div>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-proxyally" data-toggle="modal" data-target="#loginModal"><i class="fas fa-sign-in-alt"></i> Login</a>
                         </li>
                     </ul>
                 </div>
@@ -65,48 +64,9 @@
         </div>
     </footer>
 
-    <!-- Login Modal -->
-    <div class="modal fade" id="loginModal">
-        <div class="modal-dialog">
-            <div class="modal-content">
-
-                <!-- Modal Header -->
-                <div class="modal-header text-proxyally">
-                    <h4 class="modal-title"><i class="fas fa-sign-in-alt"></i> Login</h4>
-                    <button type="button" class="close" data-dismiss="modal">&times;</button>
-                </div>
-
-                <!-- Modal body -->
-                <div class="modal-body">
-                    <div class="card-body">
-                        <div class="form-group">
-                            <label for="email">Email address:</label>
-                            <input type="email" class="form-control" placeholder="Enter email" id="email" name="email">
-                        </div>
-                        <div class="form-group">
-                            <label for="password">Password:</label>
-                            <input type="password" class="form-control" placeholder="Enter password" id="password" name="password">
-                        </div>
-                        <div class="custom-control custom-checkbox">
-                            <input type="checkbox" class="custom-control-input" id="remember" name="remember">
-                            <label class="custom-control-label" for="remember">Remember Me</label>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Modal footer -->
-                <div class="modal-footer bg-proxyally-light">
-                    <button id="edit" type="button" class="btn btn-primary btn-proxyally">Submit</button>
-                    <button type="button" class="btn btn-dark" data-dismiss="modal">Close</button>
-                </div>
-
-            </div>
-        </div>
-    </div>
-
-    <!-- Proxy Detail Modal -->
+    <!-- Settings Modal -->
     <div class="modal fade" id="settingsModal">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
 
                 <!-- Modal Header -->
@@ -117,13 +77,70 @@
 
                 <!-- Modal body -->
                 <div class="modal-body">
-                    {% include 'settings.html' %}
+                    <div class="card-body">
+                        <div class="form-group mt-3">
+                            <label for="syncInterval">Sync Interval: <span id="syncIntervalLabel" class="badge badge-dark">10</span> <small>Minutes(s)</small></label>
+                            <input type="range" class="custom-range" id="syncInterval" name="syncInterval" min="1" max="60" value="10">
+                        </div>
+                        <div class="form-group">
+                            <label for="maxAge">Max Age: <span id="maxAgeLabel" class="badge badge-dark">1</span> <small>Week(s)</small></label>
+                            <input type="range" class="custom-range" id="maxAge" name="maxAge" min="1" max="4" value="1">
+                        </div>
+                        <div class="form-group">
+                            <label for="downloadDelay">Download Delay: <span id="downloadDelayLabel" class="badge badge-dark">1</span> <small>Second(s)</small></label>
+                            <input type="range" class="custom-range" id="downloadDelay" name="downloadDelay" min="1" max="60" value="1">
+                        </div>
+                        <div class="form-group">
+                            <label for="proxyTestTimeout">Proxy Test Timeout: <span id="proxyTestTimeoutLabel" class="badge badge-dark">1</span> <small>Second(s)</small></label>
+                            <input type="range" class="custom-range" id="proxyTestTimeout" name="proxyTestTimeout" min="1" max="10" value="1">
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Modal footer -->
                 <div class="modal-footer bg-proxyally-light">
-                    <button id="saveSettings" type="button" class="btn btn-primary btn-proxyally">Save</button>
-                    <button type="button" class="btn btn-dark" data-dismiss="modal">Close</button>
+                    <button id="saveSettings" type="button" class="btn btn-primary btn-proxyally"><i class="fas fa-save"></i> Save</button>
+                    <button type="button" class="btn btn-dark" data-dismiss="modal"><i class="fas fa-window-close"></i> Close</button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal fade" id="fetchersModal">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+
+                <!-- Modal Header -->
+                <div class="modal-header text-proxyally">
+                    <h4 class="modal-title"><i class="fas fa-cloud"></i> Fetchers</h4>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+
+                <!-- Modal body -->
+                <div class="modal-body">
+                    <div class="card-body bg-light mb-3">
+                        <div id="fetcherList"></div>
+                    </div>
+                    <div class="custom-file">
+                        <input type="file" class="custom-file-input" id="fetcherScript" name="fetcherScript">
+                        <label class="custom-file-label" for="fetcherScript">
+                            Upload new fetcher Script<span class="badge badge-dark">.py</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Modal footer -->
+                <div class="modal-footer bg-proxyally-light">
+
+                        <button id="uploadFetcherButton" type="button" class="btn btn-primary btn-proxyally">
+                            <i class="fas fa-cloud-upload-alt"></i> Upload
+                        </button>
+                        <button type="button" class="btn btn-dark" data-dismiss="modal"><i
+                                class="fas fa-window-close"></i> Close
+                        </button>
+
                 </div>
 
             </div>
@@ -131,7 +148,7 @@
     </div>
 
     <!-- The Modal -->
-    <div class="modal bg-proxyally-light" id="messageModal">
+    <div class="modal bg-proxyally-5" id="messageModal">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <!-- Modal Header -->
@@ -156,11 +173,125 @@
     <script src="/static/lib/timeago/jquery.timeago.js"></script>
     <script src="/static/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        var APP_ROOT = "{{ url_for('home', _external=True) }}";
+        var API_ROOT = "{{ config['API_ROOT'] }}";
+
+        var urlConfiguration = API_ROOT + '/configurations/current';
+        var urlProviders = API_ROOT + '/providers';
+
         $(document).ready(function () {
             $('[data-toggle="tooltip"]').tooltip();
         });
+
+        /* Fetchers modal ------------------------ */
+        function populateFetchersModal(){
+            $.ajax({
+                url: urlProviders + '/fetchers',
+                method: 'GET',
+                statusCode: {
+                    200: function(fetchers) {
+                        $('#fetcherList').html('');
+                        for(i in fetchers){
+                            fetcher = fetchers[i];
+                            $('#fetcherList').append('<div class="pb-1"> <i class="fas fa-cloud-download-alt fa-xs"></i> '+fetcher+'</div>');
+                        }
+                    }
+                },
+                error: function (err) { alert_bs(err.statusText, 'danger'); }
+            });
+
+            $('#uploadFetcherButton').click(function () {
+                var data = new FormData();
+
+                data.append('fetcherScript', $('#fetcherScript')[0].files[0]);
+
+                $.ajax({
+                    url: urlProviders + '/fetchers',
+                    method: 'POST',
+                    data: data,
+                    processData: false,
+                    contentType: false,
+                    statusCode: {
+                        201: function() {
+                            $('#fetchersModal').modal('hide');
+                            alert_bs('Upload successful!', 'success');
+                        }
+                    },
+                    error: function (jqXHR) {
+                        responseJSON = JSON.parse(jqXHR.responseText);
+                        alert_bs(responseJSON.message, 'danger');
+                    }
+                });
+            });
+
+            $('#fetchersModal').modal('show');
+        }
+        /* --------------------------------------- */
+
+
+        /* Settings modal ------------------------ */
+        function populateSettingsModal(){
+            $.ajax({
+                url: urlConfiguration,
+                method: 'GET',
+                success: function (data) {
+                    $("#syncInterval").val(data.syncInterval);
+                    $("#syncIntervalLabel").html(data.syncInterval);
+                    $("#maxAge").val(data.maxAge);
+                    $("#maxAgeLabel").html(data.maxAge);
+                    $("#downloadDelay").val(data.downloadDelay);
+                    $("#downloadDelayLabel").html(data.downloadDelay);
+                    $("#proxyTestTimeout").val(data.proxyTestTimeout);
+                    $("#proxyTestTimeoutLabel").html(data.proxyTestTimeout);
+
+                    $('#settingsModal').modal('show');
+                },
+                error: function (err) {
+                    console.log('Error :: ' + err.statusText);
+                }
+            });
+        }
+
+        $(document).ready(function () {
+            $("#syncInterval").on("input", function () {
+                value = $(this).val();
+                $("#syncIntervalLabel").html(value);
+            });
+            $("#maxAge").on("input", function () {
+                value = $(this).val();
+                $("#maxAgeLabel").html(value);
+            });
+            $("#downloadDelay").on("input", function () {
+                value = $(this).val();
+                $("#downloadDelayLabel").html(value);
+            });
+            $("#proxyTestTimeout").on("input", function () {
+                value = $(this).val();
+                $("#proxyTestTimeoutLabel").html(value);
+            });
+
+            $("#saveSettings").click(function () {
+                $.ajax({
+                    url: urlConfiguration,
+                    method: 'PUT',
+                    data: {
+                        syncInterval: $("#syncInterval").val(),
+                        maxAge: $("#maxAge").val(),
+                        downloadDelay: $("#downloadDelay").val(),
+                        proxyTestTimeout: $("#proxyTestTimeout").val()
+                    },
+                    success: function (data) {
+                        alert_bs('Settings saved!', 'success');
+                    },
+                    error: function (err) { console.log('Error :: ' + err.statusText); }
+        });
+            });
+        });
+        /* --------------------------------------- */
     </script>
-    {% block scripts %}{% endblock %}
+
     <script src="/static/js/site.js"></script>
+
+    {% block scripts %}{% endblock %}
 </body>
 </html>

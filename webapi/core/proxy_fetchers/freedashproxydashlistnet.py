@@ -32,7 +32,10 @@ class ProxyScrapSpider(scrapy.Spider):
             }
 
 
-def fetch():
+def fetch(config):
+    ProxyScrapSpider.custom_settings = {
+        'DOWNLOAD_DELAY': config['downloadDelay']
+    }
     # core.proxy_fetchers.proxydashlistdownload.ProxyApiSpider
     spider = '.'.join([__name__, ProxyScrapSpider.__name__])
     data = os.popen(f'python {os.getcwd()}/core/proxy_fetchers/fetch.py {spider}').read()

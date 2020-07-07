@@ -1,4 +1,4 @@
-﻿{% extends "layout.html" %}
+{% extends "layout.html" %}
 
 {% block content %}
 
@@ -7,31 +7,27 @@
 <nav class="navbar navbar-expand-sm navbar-dark bg-proxyally py-0">
     <ul class="navbar-nav">
         <li class="nav-item">
-            <a class="nav-link text-white" data-toggle="modal" data-target="#addModal"><i class="fas fa-plus"></i> Add New</a>
+            <a class="nav-link text-white" onclick="populateAddModal()"><i class="fas fa-plus"></i> Add New</a>
         </li>
         <li class="nav-item">
-            <a class="nav-link text-white" href="#"><i class="fas fa-retweet"></i> Refresh</a>
+            <a class="nav-link text-white" href="{{ url_for('provider_index') }}"><i class="fas fa-retweet"></i> Refresh</a>
         </li>
     </ul>
     <div class="navbar-text ml-auto">
-        <button class="btn btn-primary"><i class="fas fa-sync-alt"></i> Sync All</button>
+         <button id="syncAll" class="btn btn-primary">
+             <i class="fas fa-sync-alt fa-sm"></i> Sync All
+         </button>
     </div>
 </nav>
 
 <div class="border my-4 p-4">
-    <div class="table-responsive-sm">
+    <div class="table-responsive">
         <table class="table table-hover" id="dataTable">
             <thead>
                 <tr>
-                    <th>
-                        Offered by
-                    </th>
-                    <th>
-                        Base Address
-                    </th>
-                    <th>
-                        Available Proxies
-                    </th>
+                    <th>Offered By</th>
+                    <th>Base Address</th>
+                    <th>Available Proxies</th>
                     <th>Last Actions</th>
                     <th></th>
                 </tr>
@@ -39,44 +35,41 @@
             <tbody>
                 {% for item in providers['items'] %}
                 <tr>
-                    <td>
-                        <a href="{{ url_for('provider_details', id=item['id']) }}" title="Details">{{item['name']}}</a>
-                    </td>
-                    <td>
-                        {{item['baseAddress']}}
-                    </td>
-                    <td>
-                        {{ item['proxies']|length }}
-                    </td>
+                    <td><a href="{{ url_for('provider_details', id=item['id']) }}" title="Details">{{item['name']}}</a></td>
+                    <td>{{item['baseAddress']}}</td>
+                    <td class="text-center">{{ item['proxies']|length }}</td>
                     <td>
                         {% if 'updateAttempt' in item %}
-                            {% if item['updateAttempt']['type']=='syncDB' %}                                
-                                <i class="fas fa-plug text-{{'success' if item['updateAttempt']['status']=='success' else 'warning'}}" title="{{'' if item['updateAttempt']['status']=='success' else item['updateAttempt']['message']}}"></i> Sync
-                                <br/>
-                                <small title="{{item['updateAttempt']['attemptDate']}}">{{item['updateAttempt']['status']}} - {{item['updateAttempt']['attemptDate']|timeago_fromiso}}</small>
-                                <br/>
-                                <small class="border-top pt-0 mt-0">{{['synced: ', item['updateAttempt']['proxyCount']]|join('') if item['updateAttempt']['status']=='success' else ''}}</small>
-                            {% elif item['updateAttempt']['type']=='funcTest' %}
-                                <i class="fas fa-plug text-{{'success' if item['updateAttempt']['status']=='success' else 'warning'}}" title="{{'' if item['updateAttempt']['status']=='success' else item['updateAttempt']['message']}}"></i> Funtionality Test
-                                <br/>
-                                <small title="{{item['updateAttempt']['attemptDate']}}">{{item['updateAttempt']['status']}} - {{item['updateAttempt']['attemptDate']|timeago_fromiso}}</small>
-                                <br/>
-                                <small class="border-top pt-0 mt-0">{{['tested: ', item['updateAttempt']['proxyCount']]|join('') if item['updateAttempt']['status']=='success' else ''}}</small>
-                            {% elif item['updateAttempt']['type']=='fetch' %}
-                                <i class="fas fa-plug text-{{'success' if item['updateAttempt']['status']=='success' else 'warning'}}" title="{{'' if item['updateAttempt']['status']=='success' else item['updateAttempt']['message']}}"></i> Fetch
-                                <br/>
-                                <small title="{{item['updateAttempt']['attemptDate']}}">{{item['updateAttempt']['status']}} - {{item['updateAttempt']['attemptDate']|timeago_fromiso}}</small>
-                                <br/>
-                                <small class="border-top pt-0 mt-0">{{['fetched: ', item['updateAttempt']['proxyCount']]|join('') if item['updateAttempt']['status']=='success' else ''}}</small>
-                            {% endif %}
-                        {% else %}
-                            None
+                            {% set _type=item['updateAttempt']['type'] | AttemptType %}
+                            {% set _status=item['updateAttempt']['status'] %}
+                            {% set _date=item['updateAttempt']['attemptDate'] %}
+                            {% set _message=item['updateAttempt']['message'] %}
+
+                            <span data-toggle="tooltip" title="{{'' if _status=='success' else _message}}">
+                                <i class="fas fa-plug text-{{'success' if _status=='success' else ('info' if _status=='partial' else 'warning')}}"></i> {{ _type }}
+                            </span>
+                            <div>
+                                <small title="{{_date}}">{{_status}} - {{_date|timeago_fromiso}}</small><br/>
+                                {% if 'proxyCount' in item['updateAttempt'] %}
+                                    {% set _type=item['updateAttempt']['type'] | AttemptTypePassive %}
+                                    <small class="border-top">{{ _type + ': ' + item['updateAttempt']['proxyCount'] }}</small>
+                                {% endif %}
+                            </div>
                         {% endif %}
                     </td>
                     <td class="text-right">
                         <div class="btn-group btn-group-lg">
-                            <a href="{{ url_for('provider_details', id=item['id']) }}" class="btn btn-light" data-toggle="tooltip" title="Details"><i class="fas fa-file-alt text-proxyally"></i></a>
-                            <a class="btn btn-light" data-toggle="tooltip" title="Sync proxies from provider"><i class="fas fa-sync-alt text-{{'primary' if 'updateAttempt' in item and item['updateAttempt']['status']=='success' else 'danger'}}"></i></a>
+                            <a href="{{ url_for('provider_details', id=item['id']) }}" class="btn btn-light" data-toggle="tooltip" title="Details">
+                                <i class="fas fa-file-alt text-proxyally"></i>
+                            </a>
+                            {% set _upToDate = True if 'updateAttempt' in item and item['updateAttempt']['type']=='syncDB_funcTest' and (item['updateAttempt']['status']=='success' or item['updateAttempt']['status']=='partial') else False %}
+                            <a class="btn btn-light {{'disabled' if item['fetcher']=='None'}}"
+                               data-toggle="tooltip"
+                               title="{{'Up-To-Date: Sync Again?' if _upToDate else 'Sync Now'}}"
+                               onclick="syncProvider(this, '{{ item.id }}')"
+                            >
+                                <i class="fas fa-sync-alt text-{{'primary' if _upToDate else 'danger'}}"></i>
+                            </a>
                         </div>
                     </td>
                 </tr>
@@ -85,6 +78,7 @@
         </table>
     </div>
 </div>
+
 <!-- Add Modal -->
 <div class="modal fade" id="addModal">
     <div class="modal-dialog modal-lg modal-dialog-centered">
@@ -117,16 +111,9 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="fetcher">Fetchers</label>
+                        <label for="fetcher">Fetcher <i class="fas fa-info-circle text-proxyally" title="Leave it as 'None' if no suitable fetcher exists yet. Provide us comprehensive instructions and we will soon be back with a working fetcher" data-toggle="tooltip"></i></label>
                         <select id="fetcher" name="fetcher" class="custom-select">
-                            <option selected>Select Fetcher</option>
-                            <option value="freedashproxydashlistnet">freedashproxydashlistnet</option>
-                            <option value="freeproxylistsnet">freeproxylistsnet</option>
-                            <option value="proxy11com">proxy11com</option>
-                            <option value="proxydashlistdownload">proxydashlistdownload</option>
-                            <option value="proxynovacom">proxynovacom</option>
-                            <option value="spysone">spysone</option>
-                            <option value="xroxycom">xroxycom</option>
+                            <option value="None" selected>None</option>
                         </select>
                     </div>
 
@@ -139,15 +126,15 @@
 
 
                     <div class="form-group">
-                        <label for="syncTestCheckBoxes">Proxies <i class="fas fa-info-circle text-proxyally" title="You can sync and test now or later" data-toggle="tooltip"></i></label>
-                        <div id="syncTestCheckBoxes" class="border p-2 mb-3">
+                        <label for="syncTestRadioButtons">Proxies <i class="fas fa-info-circle text-proxyally" title="You can sync and test now or later" data-toggle="tooltip"></i></label>
+                        <div id="syncTestRadioButtons" class="border p-2 mb-3">
                             <div class="custom-control custom-radio custom-control-inline">
                                 <input type="radio" class="custom-control-input" id="syncTest1" name="syncTest" value="2">
-                                <label class="custom-control-label" for="syncTest1">Sync & Test Now</label>
+                                <label class="custom-control-label" for="syncTest1">Test & Sync Now</label>
                             </div>
                             <div class="custom-control custom-radio custom-control-inline">
                                 <input type="radio" class="custom-control-input" id="syncTest2" name="syncTest" value="1" checked>
-                                <label class="custom-control-label" for="syncTest2">Sync Now but Test Later</label>
+                                <label class="custom-control-label" for="syncTest2">Fetch Now but Test Later</label>
                             </div>
                             <div class="custom-control custom-radio custom-control-inline">
                                 <input type="radio" class="custom-control-input" id="syncTest3" name="syncTest" value="0" checked>
@@ -160,21 +147,98 @@
 
             <!-- Modal footer -->
             <div class="modal-footer bg-proxyally-light">
-                <button id="submit" type="button" class="btn btn-primary btn-proxyally">Save</button>
-                <button type="button" class="btn btn-dark" data-dismiss="modal">Close</button>
+                <button id="submit" type="button" class="btn btn-primary btn-proxyally"><i class="fas fa-save"></i> Save</button>
+                <button type="button" class="btn btn-dark" data-dismiss="modal"><i class="fas fa-window-close"></i> Close</button>
             </div>
 
         </div>
     </div>
 </div>
-{% endblock %}
 
+{% endblock %}
 
 {% block scripts %}
 <script src="/static/lib/datatables/jquery.dataTables.min.js"></script>
 <script src="/static/lib/datatables/dataTables.bootstrap4.min.js"></script>
 <script>
-    var resourceUrl = 'http://localhost:5001/api/v1/providers';
+    var resourceUrl = [API_ROOT, '/providers'].join('');
+
+    /* Index Page ------------------------------ */
+    $(function () {
+        $('#dataTable').DataTable({
+            columnDefs: [
+                { orderable: false, targets: [-1] }
+            ]
+        });
+
+        $('#syncAll').click(function(){
+            var i = $(this).find('i');
+            i.attr("class", "spinner-border spinner-border-sm");
+
+            $.ajax({
+                url: resourceUrl,
+                method: 'patch',
+                statusCode: {
+                    204: function() {
+                        alert_bs('Sync performed!', 'info');
+                        location.reload();
+                    }
+                },
+                error: function (err) {
+                    alert_bs(err.statusText, 'danger');
+                }
+            })
+                .always(function() {
+                    i.attr("class", "fas fa-sync-alt fa-sm");
+                });
+        });
+    });
+
+    function syncProvider(elem, providerId) {
+        var i = $(elem).find('i');
+        i.removeClass("fas fa-sync-alt");
+        i.addClass("spinner-border spinner-border-md");
+
+        $.ajax({
+            url: resourceUrl + '/' + providerId,
+            method: 'patch',
+            statusCode: {
+                204: function() {
+                  alert_bs('<span class="spinner-border spinner-border-sm"></span> Sync performed! Redirecting to detail page ... ', 'info');
+                  location.reload();
+                  window.location.replace(APP_ROOT + '/provider/details/' + providerId);
+                }
+            },
+            error: function (err) { alert_bs(err.statusText, 'danger'); }
+        })
+                .always(function() {
+                    i.removeClass("spinner-border spinner-border-md");
+                    i.addClass("fas fa-sync-alt");
+                });
+    }
+    /* ----------------------------------------- */
+
+    /* Add Modal ------------------------------- */
+
+    function populateAddModal(){
+        $.ajax({
+            url: resourceUrl + '/fetchers',
+            method: 'GET',
+            statusCode: {
+                200: function(fetchers) {
+                    $('#fetcher').html('');
+                    $('#fetcher').append('<option value="None" selected>None</option>')
+                    for(i in fetchers){
+                        fetcher = fetchers[i];
+                        $('#fetcher').append('<option value="'+fetcher+'">'+fetcher+'</option>');
+                    }
+                }
+            },
+            error: function (err) { alert_bs(err.statusText, 'danger'); }
+        })
+
+        $('#addModal').modal('show');
+    }
 
     function readFromClipboard() {
         return navigator.clipboard.readText().then(
@@ -184,26 +248,15 @@
                 elem.value = result;
                 return Promise.resolve(result);
             }
-        )
-            .catch(
-                err => {
-                    console.log("Error! read text from clipbaord", err)
-                })
+        ).catch(err => {
+            console.log("Error! read text from clipbaord", err)
+        })
     }
-
-    $(document).ready(function () {
-        $('#dataTable').DataTable({
-            columnDefs: [
-                { orderable: false, targets: [-1] }
-            ]
-        });
-    });
-
 
     function showUrlError() {
         $('#baseAddress').parent().attr('style', 'border: 1px solid red; border-radius: 5px');
         $('#urlError').show();
-        $('#urlError').html('<font color="red">Please enter a valid URL</font>');
+        $('#urlError').html('<span class="text-danger">Please enter a valid URL</span>');
     }
 
     $(function () {
@@ -226,18 +279,19 @@
             };
 
             $.ajax({
-                url: resourceUrl,
+                url: resourceUrl + '?syncTest=' + $('#syncTestRadioButtons input:checked').first().val(),
                 method: 'post',
                 data: data,
                 headers: { ContentType: 'application/json' },
                 success: function (data) {
-                    alert(data)
+                    // alert(data)
                     if (data.errors) {
                         raiseApiValidationError(data.errors);
                     } else if (data.status == 'error') {
                         alert_bs(data.message, 'danger');
                     }
                     else {
+                        $('#addModal').modal('hide');
                         alert_bs('New Provider added successfully!', 'success');
                         location.reload();
                     }
@@ -246,5 +300,6 @@
             });
         });
     });
+    /* ----------------------------------------- */
 </script>
 {% endblock %}

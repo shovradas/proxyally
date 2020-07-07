@@ -14,21 +14,19 @@
         </li>
     </ul>
     <div class="navbar-text ml-auto">
-        <button class="btn btn-primary"><i class="fas fa-check-double"></i> Validate All</button>
+        <button class="btn btn-primary" onclick="validateAllTesturl(this)"><i class="fas fa-check-double"></i> Validate All</button>
     </div>
 </nav>
 
 <div class="border my-4 p-4">
-    <div class="table-responsive-sm">
+    <div class="table-responsive">
         <table class="table table-hover" id="dataTable">
             <thead>
                 <tr>
-                    <th>
-                        URL
-                    </th>
-                    <th>
-                        Details
-                    </th>
+                    <th>URL</th>
+                    <th>Validation Attempts</th>
+                    <th class="text-center">Valid Proxies</th>
+                    <th class="text-center">Failed Proxies</th>
                     <th></th>
                 </tr>
             </thead>
@@ -36,15 +34,45 @@
                 {% for item in testurls['items'] %}
                 <tr>
                     <td>
-                        <a href="{{ url_for('testurl_details', id=item['id']) }}" title="Details">{{item['url']}}</a>
+                        <a href="{{ url_for('testurl_details', id=item['id']) }}" title="Details">
+                            <i class="fas fa-link fa-sm"></i> {{item['url']}}
+                        </a>
                     </td>
                     <td>
-                        {{item['description']}}
+                        {% if 'validationAttempt' in item%}
+                            <div>
+                                {{item['validationAttempt']['attemptDate']|timeago_fromiso}}
+                            </div>
+                            <span class="badge badge-{{'success' if item['validationAttempt']['status'] == 'success' else ('info' if item['validationAttempt']['status'] == 'partial' else 'warning')}}">
+                                {{item['validationAttempt']['status']}}
+                            </span>
+                            {% if item['validationAttempt']['status'] != 'failed' %}
+                                <span class="badge badge-secondary">
+                                    found: {{item['validationAttempt']['validProxyCount']}}
+                                </span>
+                            {% endif %}
+
+                        {% else %}
+                            None
+                        {% endif %}
+                    </td>
+                    <td class="text-center">
+                        {% set valid_count = namespace(value=0) %}
+                        {% for proxy in item['proxies'] %}
+                            {% if proxy['validationTestStatus']=='success' %}
+                                {% set valid_count.value = valid_count.value + 1 %}
+                            {% endif %}
+                        {% endfor %}
+                        {{ valid_count.value }}
+                    </td>
+                    <td class="text-center">
+                         {{item['proxies']|length - valid_count.value }}
                     </td>
                     <td class="text-right">
                         <div class="btn-group btn-group-lg">
                             <a href="{{ url_for('testurl_details', id=item['id']) }}" class="btn btn-light" data-toggle="tooltip" title="Details"><i class="fas fa-file-alt text-proxyally"></i></a>
-                            <a class="btn btn-light" data-toggle="tooltip" onclick="validateTestUrl({{item['id']}})" title="Validate Proxies"><i class="fas fa-check-double text-primary"></i></a>
+                            {% set _upToDate = False if 'validationAttempt' not in item or item['validationAttempt']['status']=='failed' else True %}
+                            <a class="btn btn-light" data-toggle="tooltip" onclick="validateTesturl(this, '{{item['id']}}')" title="{{'Up-To-Date. Validate Again?' if _upToDate else 'Validate Now'}}"><i class="fas fa-check-double text-{{'primary' if _upToDate else 'danger'}}"></i></a>
                         </div>
                     </td>
                 </tr>
@@ -56,7 +84,7 @@
 
 <!-- Add Modal -->
 <div class="modal fade" id="addModal">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
 
             <!-- Modal Header -->
@@ -77,32 +105,41 @@
                             </div>
                         </div>
                         <div id="urlError" class="mb-3"></div>
-                    </div>                    
+                    </div>
                     <div class="form-group">
-                        <label for="description">Description</label>s
-                        <textarea class="form-control" placeholder="Any remark" id="description" name="description" rows="8"></textarea>
+                        <label for="validateUrlCheckBoxes">Proxies <i class="fas fa-info-circle text-proxyally" title="You can validate now or later" data-toggle="tooltip"></i></label>
+                        <div id="validateUrlCheckBoxes" class="border p-2 mb-3">
+                            <div class="custom-control custom-radio custom-control-inline">
+                                <input type="radio" class="custom-control-input" id="validateUrl1" name="validateUrl" value="true">
+                                <label class="custom-control-label" for="validateUrl1">Validate Now</label>
+                            </div>
+                            <div class="custom-control custom-radio custom-control-inline">
+                                <input type="radio" class="custom-control-input" id="validateUrl2" name="validateUrl" value="false" checked>
+                                <label class="custom-control-label" for="validateUrl2">Save for Later</label>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <!-- Modal footer -->
             <div class="modal-footer bg-proxyally-light">
-                <button id="submit" type="button" class="btn btn-primary btn-proxyally">Save</button>
-                <button type="button" class="btn btn-dark" data-dismiss="modal">Close</button>
+                <button id="addButton" type="button" class="btn btn-primary btn-proxyally"><i class="fas fa-save"></i> Save</button>
+                <button type="button" class="btn btn-dark" data-dismiss="modal"><i class="fas fa-window-close"></i> Close</button>
             </div>
-
         </div>
     </div>
 </div>
-{% endblock %}
 
+{% endblock %}
 
 {% block scripts %}
 <script src="/static/lib/datatables/jquery.dataTables.min.js"></script>
 <script src="/static/lib/datatables/dataTables.bootstrap4.min.js"></script>
 <script>
-    var resourceUrl = 'http://localhost:5001/api/v1/testurls';
+    var resourceUrl = API_ROOT + '/testurls';
 
+    /* Add modal -------------------------------- */
     function readFromClipboard() {
         return navigator.clipboard.readText().then(
             result => {
@@ -117,37 +154,31 @@
                     console.log("Error! read text from clipbaord", err)
                 })
     }
-    $(document).ready(function () {
-        $('#dataTable').DataTable({
-            columnDefs: [
-                { orderable: false, targets: [-1] }
-            ]
-        });
-    });
+
     function showUrlError() {
         $('#testurl').parent().attr('style', 'border: 1px solid red');
         $('#urlError').show();
         $('#urlError').html('<font color="red">Please enter a valid URL</font>');
     }
+
     $(function () {
         $('#testurl').click(function () {
             $('#testurl').parent().attr('style', '');
             $('#urlError').hide();
         });
 
-        $('#submit').click(function (e) {
+        $('#addButton').click(function (e) {
             if (!isValidURL($('#testurl').val())) {
                 showUrlError();
                 return;
             }
 
             data = {
-                url: $('#testurl').val(),
-                description: $('#description').val()
+                url: $('#testurl').val()
             };
 
             $.ajax({
-                url: resourceUrl,
+                url: resourceUrl + '?validate=' + $('#validateUrlCheckBoxes input:checked').first().val(),
                 method: 'post',
                 data: data,
                 headers: { ContentType: 'application/json' },
@@ -155,7 +186,8 @@
                     if (data.errors) {
                         raiseApiValidationError(data.errors);
                     } else {
-                        alert_bs('New URL added successfully!', 'success');
+                        $('#addModal').modal('hide');
+                        alert_bs('<div class="text-center">New URL added successfully!<br/><span class="spinner-border spinner-border-sm"></span> Reloading ... </div>', 'success');
                         location.reload();
                     }
                 },
@@ -163,17 +195,71 @@
             });
         });
     });
+    /* ------------------------------------------ */
 
-    function validateTestUrl(id){
-        //$.ajax({
-        //    url: [resourceUrl, "/", id].join(''),
-        //    method: 'DELETE',
-        //    headers: { ContentType: 'application/json' },
-        //    success: function (data) {
-        //        location.reload();
-        //    },
-        //    error: function (err) { window.alert('Error :: ' + err.statusText); }
-        //});
+    /* Index page ------------------------------- */
+    $(document).ready(function () {
+        $('#dataTable').DataTable({
+            columnDefs: [
+                { orderable: false, targets: [-1] }
+                //,{ "width": "20%", "targets": [0] }
+            ]
+        });
+    });
+
+    function validateTesturl(elem, testurlId) {
+        var i = $(elem).find('i');
+        i.removeClass("fas fa-check-double");
+        i.addClass("spinner-border spinner-border-md");
+
+        $.ajax({
+            url: resourceUrl + '/' + testurlId,
+            method: 'PATCH',
+            statusCode: {
+                204: function() {
+                  alert_bs('<span class="spinner-border spinner-border-sm"></span> Validation performed! Redirecting to details page ... ', 'info');
+                  window.location.replace(APP_ROOT + 'testurl/details/' + testurlId);
+                }
+            },
+            error: function (jqXHR) {
+                responseJSON = JSON.parse(jqXHR.responseText);
+                alert_bs(responseJSON.message, 'danger');
+                location.reload();
+                //window.location.replace(APP_ROOT + 'proxy/details/' + proxyId);
+            }
+        })
+                .always(function() {
+                    i.removeClass("spinner-border spinner-border-md");
+                    i.addClass("fas fa-check-double");
+                });
     }
+
+    function validateAllTesturl(elem) {
+        var i = $(elem).find('i');
+        i.removeClass("fas fa-check-double");
+        i.addClass("spinner-border spinner-border-md");
+
+        $.ajax({
+            url: resourceUrl,
+            method: 'patch',
+            statusCode: {
+                204: function() {
+                  alert_bs('<span class="spinner-border spinner-border-sm"></span> Validation performed! Please wait ... ', 'info');
+                  location.reload();
+                }
+            },
+            error: function (jqXHR) {
+                responseJSON = JSON.parse(jqXHR.responseText);
+                alert_bs(responseJSON.message, 'danger');
+                location.reload();
+                //window.location.replace(APP_ROOT + 'proxy/details/' + proxyId);
+            }
+        })
+                .always(function() {
+                    i.removeClass("spinner-border spinner-border-md");
+                    i.addClass("fas fa-check-double");
+                });
+    }
+    /* ------------------------------------------ */
 </script>
 {% endblock %}

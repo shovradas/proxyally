@@ -7,14 +7,18 @@
 <nav class="navbar navbar-expand-sm navbar-dark bg-proxyally py-0 mt-3">
     <ul class="navbar-nav">
         <li class="nav-item">
-            <a class="nav-link text-white" href="{{ url_for('provider_index', id=proxy['provider']['id'])}}"><i class="fas fa-handshake"></i> Back To Providers List</a>
+            <a class="nav-link text-white" href="{{ url_for('provider_details', id=proxy['provider']['id'])}}"><i class="fas fa-arrow-left"></i> Back To Provider</a>
         </li>
         <li class="nav-item">
-            <a class="nav-link text-white" href="{{ url_for('testurl_index', id=proxy['provider']['id'])}}"><i class="fas fa-link"></i>  Back To URL List</a>
+            <a class="nav-link text-white" href="{{ url_for('provider_index')}}"><i class="fas fa-handshake"></i> Providers List</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link text-white" href="{{ url_for('testurl_index')}}"><i class="fas fa-link"></i>  URL List</a>
         </li>        
     </ul>
-    <div class="navbar-text ml-auto">
-        <button class="btn btn-primary"><i class="fas fa-check-double"></i> Validate Now</button>
+    <div class="navbar-text ml-md-auto">
+        <button class="btn btn-primary" onclick="syncProxy(this, '{{ proxy['id'] }}')"><i class="fas fa-check"></i> Test Now</button>
+        <button class="btn btn-primary" onclick="validateProxy(this, '{{ proxy['id'] }}')"><i class="fas fa-check-double"></i> Validate Now</button>
     </div>    
 </nav>
 
@@ -36,16 +40,10 @@
                 {{proxy['ip']}}:{{proxy['port']}}
             </dd>
             <dt class="col-sm-2">
-                Last Functional
+                First Discovered
             </dt>
-            <dd class="col-sm-10" title="date of the last successful basic functionality test">
-                <span data-toggle="tooltip" title="{{proxy['funcTestDate']}}">{{proxy['funcTestDate']|timeago_fromiso}}</span>
-            </dd>
-            <dt class="col-sm-2">
-                Anonymity Level
-            </dt>
-            <dd class="col-sm-10">
-                {{proxy['anonymity']}}
+            <dd class="col-sm-10" title="date when the address was first found in any proxy list">
+                <span data-toggle="tooltip" title="{{proxy['discoveredDate']}}">{{proxy['discoveredDate']|timeago_fromiso}}</span>
             </dd>
             <dt class="col-sm-2">
                 Last Found
@@ -54,29 +52,35 @@
                 <span data-toggle="tooltip" title="{{proxy['lastFoundDate']}}">{{proxy['lastFoundDate']|timeago_fromiso}}</span>
             </dd>
             <dt class="col-sm-2">
-                First Discovered
+                Last Functional
             </dt>
-            <dd class="col-sm-10" title="date when the address was first found in any proxy list">
-                <span data-toggle="tooltip" title="{{proxy['discoveredDate']}}">{{proxy['discoveredDate']|timeago_fromiso}}</span>
+            <dd class="col-sm-10" title="date of the last successful basic functionality test">
+                <span data-toggle="tooltip" title="{{proxy['funcTestDate'] if 'funcTestDate' in proxy}}">{{proxy['funcTestDate']|timeago_fromiso if 'funcTestDate' in proxy else 'Not Tested'}}</span>
+            </dd>
+            <dt class="col-sm-2">
+                Anonymity Level
+            </dt>
+            <dd class="col-sm-10">
+                {{proxy['anonymity'] or 'Not determined'}}
             </dd>
         </dl>
 
         <h4 class="text-center text-proxyally my-2">
-            - Validated URLs -
+            - Validated Services -
         </h4>
 
-        <div class="table-responsive-sm">
+        <div class="table-responsive">
             <table class="table table-hover border-bottom" id="dataTable">
                 <thead>
                     <tr>
                         <th>
-                            TestURL
+                            Test URL
                         </th>
                         <th>
-                            Description
+                            Last Attempted
                         </th>
                         <th>
-                            Last Validated
+                            Status
                         </th>
                         <th></th>
                     </tr>
@@ -85,13 +89,15 @@
                     {% for testurl in proxy['testurls'] %}
                     <tr>
                         <td>
-                            <a href="{{ url_for('testurl_details', id=testurl['id']) }}" data-toggle="tooltip" title="See details">{{testurl['url']}}</a>
+                            <a href="{{ url_for('testurl_details', id=testurl['id']) }}" data-toggle="tooltip" title="See details">
+                                <i class="fas fa-link fa-sm"></i> {{testurl['url']}}
+                            </a>
                         </td>
                         <td>
-                            {{testurl['description']}}
+                            {{testurl['validationTestDate']|timeago_fromiso}}
                         </td>
                         <td>
-                            {{testurl['urlFuncTestDate']|timeago_fromiso}}
+                            {{testurl['validationTestStatus']}}
                         </td>
                         <td class="text-right">
                             <div class="btn-group btn-group-lg">
@@ -116,6 +122,8 @@
 <script src="/static/lib/datatables/jquery.dataTables.min.js"></script>
 <script src="/static/lib/datatables/dataTables.bootstrap4.min.js"></script>
 <script>
+    var proxyUrl = API_ROOT + '/proxies';
+
     $(document).ready(function () {
         $('#dataTable').DataTable({
             columnDefs: [
@@ -123,5 +131,66 @@
             ]
         });
     });
+
+    function syncProxy(elem, proxyId) {
+        var i = $(elem).find('i');
+        i.removeClass("fas fa-check");
+        i.addClass("spinner-border spinner-border-md");
+
+        $.ajax({
+            url: proxyUrl + '/' + proxyId,
+            method: 'patch',
+            statusCode: {
+                204: function() {
+                  alert_bs('<span class="spinner-border spinner-border-sm"></span> Test performed! Please wait ... ', 'info');
+                  location.reload();
+                },
+                404: function(){
+                    alert_bs(responseJSON.message, 'danger');
+                    window.location.replace(APP_ROOT + 'provider/details/{{ proxy['provider']['id'] }}');
+                }
+            },
+            error: function (jqXHR) {
+                responseJSON = JSON.parse(jqXHR.responseText);
+                alert_bs(responseJSON.message, 'danger');
+                location.reload();
+            }
+        })
+                .always(function() {
+                    i.removeClass("spinner-border spinner-border-md");
+                    i.addClass("fas fa-check");
+                });
+    }
+
+    function validateProxy(elem, proxyId) {
+        var i = $(elem).find('i');
+        i.removeClass("fas fa-check-double");
+        i.addClass("spinner-border spinner-border-md");
+
+        $.ajax({
+            url: proxyUrl + '/' + proxyId + '?validate=True',
+            method: 'patch',
+            statusCode: {
+                204: function() {
+                  alert_bs('<span class="spinner-border spinner-border-sm"></span> Validation performed! Reloading ... ', 'info');
+                  location.reload();
+                },
+                404: function(){
+                    alert_bs(responseJSON.message, 'danger');
+                    window.location.replace(APP_ROOT + 'provider/details/{{ proxy['provider']['id'] }}');
+                }
+            },
+            error: function (jqXHR) {
+                responseJSON = JSON.parse(jqXHR.responseText);
+                alert_bs(responseJSON.message, 'danger');
+                location.reload();
+                //window.location.replace(APP_ROOT + 'provider/details/{{ proxy['provider']['id'] }}');
+            }
+        })
+                .always(function() {
+                    i.removeClass("spinner-border spinner-border-md");
+                    i.addClass("fas fa-check-double");
+                });
+    }
 </script>
 {% endblock %}

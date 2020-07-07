@@ -24,9 +24,7 @@ class ProxyApiSpider(scrapy.Spider):
             yield scrapy.Request('https://proxy11.com/api/proxy.json?key=MTM4Nw.XulXOg.pbVkEpugepwbpwSQ09binLAz_Sk', self.parse)
 
     def parse(self, response):
-        #content = response.body.decode('utf-8').split('\r\n')[:-1]
         items = json.loads(response.body)
-        #print(items)
         for item in items['data']:            
             yield {
                 'ip': item['ip'],
@@ -34,7 +32,10 @@ class ProxyApiSpider(scrapy.Spider):
             }
 
 
-def fetch():
+def fetch(config):
+    ProxyApiSpider.custom_settings = {
+        'DOWNLOAD_DELAY': config['downloadDelay']
+    }
     # core.proxy_fetchers.proxydashlistdownload.ProxyApiSpider
     spider = '.'.join([__name__, ProxyApiSpider.__name__])
     data = os.popen(f'python {os.getcwd()}/core/proxy_fetchers/fetch.py {spider}').read()

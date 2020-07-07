@@ -1,5 +1,5 @@
 import scrapy, os, json
-from urllib.parse import unquote, urljoin
+from urllib.parse import urljoin
 from urllib.request import pathname2url
 import ast
 from config import DEBUG
@@ -31,7 +31,10 @@ class ProxyRssSpider(scrapy.spiders.feed.XMLFeedSpider):
             }
 
 
-def fetch():
+def fetch(config):
+    ProxyRssSpider.custom_settings = {
+        'DOWNLOAD_DELAY': config['downloadDelay']
+    }
     # core.proxy_fetchers.proxydashlistdownload.ProxyApiSpider
     spider = '.'.join([__name__, ProxyRssSpider.__name__])
     data = os.popen(f'python {os.getcwd()}/core/proxy_fetchers/fetch.py {spider}').read()

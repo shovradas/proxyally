@@ -10,7 +10,6 @@ from config import API_ROOT
 
 
 @app.route('/')
-@app.route('/home')
 def home():
     """Renders the home page."""
     return render_template(
@@ -107,10 +106,14 @@ def provider_details(id):
     resp = requests.get(f'{API_ROOT}/providers/{id}?embed=True')
     provider=resp.json()
 
+    resp = requests.get(f'{API_ROOT}/configurations/current')
+    proxyally_config = resp.json()
+
     return render_template(
         'provider/details.html',
         title='Provider Details',
-        provider=provider
+        provider=provider,
+        proxyally_config=proxyally_config
     )
 
 # endregion
@@ -122,7 +125,7 @@ def provider_details(id):
 @app.route('/testurl')
 def testurl_index():
     """Renders the testurl list page."""
-    resp = requests.get(f'{API_ROOT}/testurls')
+    resp = requests.get(f'{API_ROOT}/testurls?embed=True')
     testurls=resp.json()
 
     return render_template(
@@ -137,6 +140,8 @@ def testurl_details(id):
     """Renders the testurl detail page."""
     resp = requests.get(f'{API_ROOT}/testurls/{id}?embed=True')
     testurl=resp.json()
+
+
 
     return render_template(
         'testurl/details.html',

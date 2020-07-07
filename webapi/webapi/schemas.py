@@ -1,3 +1,4 @@
+import sys
 
 from marshmallow import fields, post_dump, validate
 from webapi import ma
@@ -23,11 +24,11 @@ class BaseSchema(ma.Schema):
 
 class TesturlSchema(BaseSchema):
     class Meta(BaseSchema.Meta):
-        fields = ('_links', '_id', 'url', 'description')
+        fields = ('_links', '_id', 'url', 'validationAttempt')
 
     _id = util.CustomObjectIdField(data_key='id', dump_only=True)
-    url = fields.String(required=True, validate=validate.Length(min=1))
-    description = fields.String(required=True)
+    url = fields.String(required=True, validate=validate.Length(min=10))
+    validationAttempt = fields.Dict(keys=fields.Str(), values=fields.Str(), dump_only=True)
 
     _links = ma.Hyperlinks({
         'self': {
@@ -43,9 +44,10 @@ class TesturlSchema(BaseSchema):
 
 class ProxyTesturlSchema(TesturlSchema):
     class Meta(TesturlSchema.Meta):
-        fields = ('_links', '_id', 'url', 'description', 'urlFuncTestDate')
+        fields = ('_links', '_id', 'url', 'validationAttempt', 'validationTestDate', 'validationTestStatus')
 
-    urlFuncTestDate = fields.DateTime(required=True)
+    validationTestDate = fields.DateTime(dump_only=True)
+    validationTestStatus = fields.String(dump_only=True)
 
 
 class ConfigurationSchema(BaseSchema):
@@ -54,10 +56,10 @@ class ConfigurationSchema(BaseSchema):
 
     #_id = fields.String(data_key='id', dump_only=True)
     maxAge = fields.Integer(required=True, min=1, max=5)
-    syncInterval = fields.Integer(required=True, min=10, max=60)
+    syncInterval = fields.Integer(required=True, min=1, max=60)
     downloadDelay = fields.Integer(required=True, min=1, max=60)
-    proxyTestTimeout = fields.Integer(required=True, min=1, max=30)
-    status = fields.Boolean(required=True)
+    proxyTestTimeout = fields.Integer(required=True, min=1, max=10)
+    status = fields.Boolean()
 
     _links = ma.Hyperlinks({
         'self': {
@@ -71,36 +73,6 @@ class ConfigurationSchema(BaseSchema):
     })
 
 
-class LoginSchema(BaseSchema):
-    class Meta(BaseSchema.Meta):
-        fields = ('email', 'password')
-    email = fields.String(required=True, validate=validate.Email())
-    password = fields.String(required=True, validate=validate.Length(min=8, max=255), load_only=True)
-
-
-class UserSchema(BaseSchema):
-    class Meta(BaseSchema.Meta):
-        fields = ('_links', '_id', 'email', 'password', 'pin')
-
-    _id = fields.String(data_key='id', dump_only=True)
-    email = fields.String(required=True, validate=validate.Email())
-    password = fields.String(required=True, validate=validate.Length(min=8, max=255), load_only=True)
-    pin = fields.Integer(required=True, load_only=True)
-    createdDate = fields.Date(dump_only=True)
-    lastUpdatedDate = fields.Date(dump_only=True)
-
-    _links = ma.Hyperlinks({
-        'self': {
-            'href': ma.AbsoluteURLFor('user', id='<_id>'),
-            'title': 'user detail'
-        },
-        'collection': {
-           'href': ma.AbsoluteURLFor('userlist'),           
-           'title': 'list of users'
-        }
-    })
-
-
 class ProviderSchema(BaseSchema):
     class Meta(BaseSchema.Meta):
         fields = ('_links', '_id', 'name', 'baseAddress', 'fetcher', 'instructions', 'updateAttempt')
@@ -108,7 +80,7 @@ class ProviderSchema(BaseSchema):
     _id = fields.String(data_key='id', dump_only=True)
     name = fields.String()
     baseAddress = fields.String(required=True, validate=validate.Length(min=10))
-    fetcher = fields.String()
+    fetcher = fields.String(required=True)
     instructions = fields.String(required=True, validate=validate.Length(min=2))    
     updateAttempt = fields.Dict(keys=fields.Str(), values=fields.Str(), dump_only=True)
 
@@ -132,10 +104,10 @@ class ProxySchemaBase(BaseSchema):
     providerId = util.CustomObjectIdField(required=True)
     ip = fields.String(required=True, validate=validate.Length(min=1))
     port: fields.Integer(required=True)
-    funcTestDate = fields.DateTime(dump_only=True)
     lastFoundDate = fields.DateTime(dump_only=True)
     discoveredDate = fields.DateTime(dump_only=True)
-    anonymity = fields.String(required=True, validate=validate.Length(min=1))
+    anonymity = fields.String(dump_only=True)
+    funcTestDate = fields.DateTime(dump_only=True)
 
     _links = ma.Hyperlinks({
         'self': {
@@ -186,16 +158,24 @@ class ProviderSchemaEmbedded(ProviderSchema):
     proxies = fields.List(fields.Nested(ProxySchemaBase, dump_only=True))
 
 
+class ProviderSchemaCountEmbedded(ProviderSchema):
+    class Meta(ProviderSchema.Meta):
+        fields = ('_links', 'proxyCount', '_id', 'name', 'baseAddress', 'fetcher', 'instructions', 'updateAttempt')
+
+    proxyCount = fields.Integer(dump_only=True)
+
+
 class TesturlProxySchema(ProxySchemaBase):
     class Meta(TesturlSchema.Meta):
-        fields = ['_links', '_id', 'providerId', 'ip', 'port', 'funcTestDate', 'lastFoundDate', 'discoveredDate', 'anonymity', 'urlFuncTestDate']
+        fields = ['_links', '_id', 'providerId', 'ip', 'port', 'funcTestDate', 'lastFoundDate', 'discoveredDate', 'anonymity', 'validationTestDate', 'validationTestStatus']
 
-    urlFuncTestDate = fields.DateTime(required=True)
+    validationTestDate = fields.DateTime(dump_only=True)
+    validationTestStatus = fields.String(dump_only=True)
 
 
 class TesturlSchemaEmbedded(TesturlSchema):
     class Meta(TesturlSchema.Meta):
-        fields = ('_links', 'proxies', '_id', 'url', 'description')
+        fields = ('_links', 'proxies', '_id', 'url', 'validationAttempt')
 
     proxies = fields.List(fields.Nested(TesturlProxySchema, dump_only=True))
 
@@ -205,12 +185,15 @@ class TesturlSchemaEmbedded(TesturlSchema):
 # region webargs_schemas
 
 params_schema = {
-    "limit": webargs.fields.Int(missing=25, validate=lambda x: x >= 0),
+    "limit": webargs.fields.Int(missing=sys.maxsize, validate=lambda x: x >= 0),
     "offset": webargs.fields.Int(missing=0, validate=lambda x: x >= 0),
     "embed": webargs.fields.Boolean(missing=False),
     "anonymities": webargs.fields.String(),
     "providers": webargs.fields.String(),
-    "syncTest": webargs.fields.Integer(missing=0, validate=lambda x: x in [1, 2])
+    "syncTest": webargs.fields.Integer(missing=0, validate=lambda x: x in [0, 1, 2]),
+    "validate": webargs.fields.Bool(missing=False),
+    "sort": webargs.fields.String(),
+    "order": webargs.fields.String()
 }
 
 # endregion

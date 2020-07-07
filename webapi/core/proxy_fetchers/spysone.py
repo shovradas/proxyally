@@ -1,4 +1,4 @@
-import scrapy, os, json
+import scrapy, os, json, re
 from urllib.parse import unquote, urljoin
 from urllib.request import pathname2url
 import ast
@@ -53,7 +53,10 @@ class ProxyScrapSpider(scrapy.Spider):
         return int(port)
 
 
-def fetch():
+def fetch(config):
+    ProxyScrapSpider.custom_settings = {
+        'DOWNLOAD_DELAY': config['downloadDelay']
+    }
     # core.proxy_fetchers.proxydashlistdownload.ProxyApiSpider
     spider = '.'.join([__name__, ProxyScrapSpider.__name__])
     data = os.popen(f'python {os.getcwd()}/core/proxy_fetchers/fetch.py {spider}').read()

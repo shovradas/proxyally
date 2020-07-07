@@ -17,31 +17,46 @@
         </li>
     </ul>
     <div class="navbar-text ml-auto">
-        <button class="btn btn-primary"><i class="fas fa-check-double"></i> Validate Now</button>
+        <button class="btn btn-primary" onclick="validateTesturl(this, '{{ testurl['id'] }}')"><i class="fas fa-check-double"></i> Validate Now</button>
     </div>
 </nav>
 
 <div class="card my-3">
     <div class="card-body">
         <dl class="row mt-md-2">
-            <dt class="col-sm-1">
+            <dt class="col-sm-2">
                 URL
             </dt>
-            <dd class="col-sm-11" title="base address (URL) of the proxy list" id="testurl">
+            <dd class="col-sm-10" id="testurl">
                 {{testurl['url']}}
             </dd>
-            <dt class="col-sm-1">
-                Details
+            <dt class="col-sm-2">
+                Last Attempt
             </dt>
-            <dd class="col-sm-11" title="base address (URL) of the proxy list" id="description">
-                {{testurl['description']}}
+            <dd class="col-sm-10">
+                {% if 'validationAttempt' in testurl%}
+                    <span>
+                        {{testurl['validationAttempt']['attemptDate']|timeago_fromiso}}
+                    </span>
+                    <span class="badge badge-{{'success' if testurl['validationAttempt']['status'] == 'success' else ('info' if testurl['validationAttempt']['status'] == 'partial' else 'warning')}}">
+                        {{testurl['validationAttempt']['status']}}
+                    </span>
+                    {% if testurl['validationAttempt']['status'] != 'failed' %}
+                        <span class="badge badge-secondary">
+                            found: {{testurl['validationAttempt']['validProxyCount']}}
+                        </span>
+                    {% endif %}
+
+                {% else %}
+                    None
+                {% endif %}
             </dd>
         </dl>
 
         <h4 class="text-center text-proxyally">
             - Validated Proxies -
         </h4>
-        <div class="table-responsive-sm pt-3">
+        <div class="table-responsive pt-3">
             <table class="table table-hover border-bottom" id="dataTable">
                 <thead>
                     <tr>
@@ -53,6 +68,9 @@
                         </th>
                         <th>
                             Last Checked
+                        </th>
+                        <th>
+                            Last Validated
                         </th>
                         <th></th>
                     </tr>
@@ -69,10 +87,25 @@
                         <td>
                             {{proxy['funcTestDate']|timeago_fromiso or 'Not tested yet'}}
                         </td>
+                        <td>
+                            {% if 'validationTestDate' in proxy %}
+                                <div>
+                                    {{proxy['validationTestDate']|timeago_fromiso}}
+                                </div>
+                                <span class="badge badge-{{'success' if proxy['validationTestStatus'] == 'success' else 'warning'}}">
+                                    {{proxy['validationTestStatus']}}
+                                </span>
+                            {% else %}
+                                Not Yet
+                            {% endif %}
+                        </td>
                         <td class="text-right">
                             <div class="btn-group btn-group-lg">
                                 <a href="{{ url_for('proxy_details', id=proxy['id']) }}" class="btn btn-light" data-toggle="tooltip" title="See details"><i class="fas fa-file-alt text-proxyally"></i></a>
-                                <a class="btn btn-light" data-toggle="tooltip" title="This proxy has become stale. Test now?" onclick="showProxyDetail({{proxy}})"><i class="fas fa-check text-{{'primary' if 'funcTestDate' in proxy else 'danger'}}"></i></a>
+                                {% set _upToDate = True if 'validationTestStatus' in proxy and proxy['validationTestStatus']=='success' else false %}
+                                <a class="btn btn-light" data-toggle="tooltip" title="{{'Up-To-Date. Validate Again?' if _upToDate else 'Validate Now'}}" onclick="validateProxy(this, '{{proxy['id']}}')">
+                                    <i class="fas fa-check-double text-{{'primary' if _upToDate else 'danger'}}"></i>
+                                </a>
                             </div>
                         </td>
                     </tr>
@@ -89,7 +122,7 @@
 
 <!-- Edit Modal -->
 <div class="modal fade" id="editModal">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
 
             <!-- Modal Header -->
@@ -112,18 +145,26 @@
                         <div id="urlError"></div>
                     </div>                    
                     <div class="form-group">
-                        <label for="description_edit">Description</label>s
-                        <textarea class="form-control" placeholder="Any remark" id="description_edit" name="description_edit" rows="8"></textarea>
+                        <label for="validateUrlCheckBoxes">Proxies <i class="fas fa-info-circle text-proxyally" title="You can validate now or later" data-toggle="tooltip"></i></label>
+                        <div id="validateUrlCheckBoxes" class="border p-2 mb-3">
+                            <div class="custom-control custom-radio custom-control-inline">
+                                <input type="radio" class="custom-control-input" id="validateUrl1" name="validateUrl" value="true">
+                                <label class="custom-control-label" for="validateUrl1">Validate Now</label>
+                            </div>
+                            <div class="custom-control custom-radio custom-control-inline">
+                                <input type="radio" class="custom-control-input" id="validateUrl2" name="validateUrl" value="false" checked>
+                                <label class="custom-control-label" for="validateUrl2">Save for Later</label>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <!-- Modal footer -->
             <div class="modal-footer bg-proxyally-light">
-                <button id="edit" type="button" class="btn btn-primary btn-proxyally">Confirm</button>
-                <button type="button" class="btn btn-dark" data-dismiss="modal">Cancel</button>
+                <button id="edit" type="button" class="btn btn-primary btn-proxyally"><i class="fas fa-save"></i> Save</button>
+                <button type="button" class="btn btn-dark" data-dismiss="modal"><i class="fas fa-window-close"></i> Close</button>
             </div>
-
         </div>
     </div>
 </div>
@@ -161,8 +202,75 @@
 <script src="/static/lib/datatables/jquery.dataTables.min.js"></script>
 <script src="/static/lib/datatables/dataTables.bootstrap4.min.js"></script>
 <script>   
-    var resourceUrl = 'http://localhost:5001/api/v1/testurls';
+    var resourceUrl = API_ROOT + '/testurls';
+    var proxyUrl = API_ROOT + '/proxies';
 
+    /* Detail page ------------------------------ */
+    $(document).ready(function () {
+        $('#dataTable').DataTable({
+            columnDefs: [
+                { orderable: false, targets: [-1] }
+            ]
+        });
+    });
+
+    function validateTesturl(elem, testurlId) {
+        var i = $(elem).find('i');
+        i.removeClass("fas fa-check-double");
+        i.addClass("spinner-border spinner-border-md");
+
+        $.ajax({
+            url: resourceUrl + '/' + testurlId,
+            method: 'patch',
+            statusCode: {
+                204: function() {
+                  alert_bs('<span class="spinner-border spinner-border-sm"></span> Validation performed! Please wait ... ', 'info');
+                  location.reload();
+                }
+            },
+            error: function (jqXHR) {
+                responseJSON = JSON.parse(jqXHR.responseText);
+                alert_bs(responseJSON.message, 'danger');
+                location.reload();
+                //window.location.replace(APP_ROOT + 'proxy/details/' + proxyId);
+            }
+        })
+                .always(function() {
+                    i.removeClass("spinner-border spinner-border-md");
+                    i.addClass("fas fa-check-double");
+                });
+    }
+
+    function validateProxy(elem, proxyId) {
+        var i = $(elem).find('i');
+        i.removeClass("fas fa-check-double");
+        i.addClass("spinner-border spinner-border-md");
+
+        $.ajax({
+            url: proxyUrl + '/' + proxyId + '?validate=true',
+            method: 'patch',
+            statusCode: {
+                204: function() {
+                  alert_bs('<span class="spinner-border spinner-border-sm"></span> Validation performed! Redirecting to detail page ... ', 'info');
+                  //location.reload();
+                  window.location.replace(APP_ROOT + 'proxy/details/' + proxyId);
+                }
+            },
+            error: function (jqXHR) {
+                responseJSON = JSON.parse(jqXHR.responseText);
+                alert_bs(responseJSON.message, 'danger');
+                location.reload();
+            }
+        })
+                .always(function() {
+                    i.removeClass("spinner-border spinner-border-md");
+                    i.addClass("fas fa-check-double");
+                });
+    }
+    /* ------------------------------------------ */
+
+
+    /* Edit modal ------------------------------- */
     function readFromClipboard() {
         return navigator.clipboard.readText().then(
             result => {
@@ -178,22 +286,15 @@
                 })
     }
 
-    $(document).ready(function () {
-        $('#dataTable').DataTable({
-            columnDefs: [
-                { orderable: false, targets: [-1] }
-            ]
-        });
-    }); 
     function showUrlError() {
         $('#testurl_edit').parent().attr('style', 'border: 1px solid red');
         $('#urlError').show();
         $('#urlError').html('<font color="red">Please enter a valid URL</font>');
     }
+
     $(function () {
         $('#editModal').on('shown.bs.modal', function () {
             $('#testurl_edit').val($('#testurl').text().trim());
-            $('#description_edit').val($('#description').text().trim());
         });
 
         $('#testurl_edit').click(function () {
@@ -207,36 +308,46 @@
                 return;
             }
             data = {
-                url: $('#testurl_edit').val(),
-                description: $('#description_edit').val()
+                url: $('#testurl_edit').val()
             };
             $.ajax({
-                url: resourceUrl + "/{{testurl['id']}}",
+                url: resourceUrl + "/{{testurl['id']}}" + '?validate=' + $('#validateUrlCheckBoxes input:checked').first().val(),
                 method: 'PUT',
                 data: data,
                 headers: { ContentType: 'application/json' },
                 success: function (data) {
                     $('#testurl').text($('#testurl_edit').text().trim());
-                    $('#description').text($('#description_edit').text().trim());
-                    window.alert('URL updated successfully!');
+                    $('#editModal').modal('hide');
+                    alert_bs('<div class="text-center">Test URL updated successfully!<br/><span class="spinner-border spinner-border-sm"></span> Reloading ... </div>', 'success');
+                    location.reload();
                 },
-                error: function (err) { window.alert('Error :: ' + err.statusText); }
+                error: function (jqXHR) {
+                    responseJSON = JSON.parse(jqXHR.responseText);
+                    alert_bs(responseJSON.message, 'danger');
+                    location.reload();
+                }
             });
         });
+    });
+    /* ------------------------------------------ */
 
-        $('#delete').click(function () {            
+
+    /* Delete modal ----------------------------- */
+    $(function () {
+        $('#delete').click(function () {
                 $.ajax({
                     url: resourceUrl + "/{{testurl['id']}}",
                     method: 'DELETE',
                     headers: { ContentType: 'application/json' },
                     success: function (data) {
+                        $('#deleteModal').modal('hide');
                         alert_bs('Deleted successfully', 'success');
                         window.location = "{{url_for('testurl_index')}}"
                     },
                     error: function (err) { window.alert('Error :: ' + err.statusText); }
                 });
         });
-
     });
+    /* ------------------------------------------ */
 </script>
 {% endblock %}

@@ -30,7 +30,7 @@ def create_db_indexes_if_not_exists():
             ],
             unique=True
         )
-        mongo.db.users.create_index('email', unique=True)
+        mongo.db.testurls.create_index('url', unique=True)
 
 
 def boot():
@@ -50,7 +50,7 @@ def boot():
                 "maxAge": 1,  # Week
                 "syncInterval": 10,  # Minutes
                 "downloadDelay": 1,  # Seconds
-                "proxyTestTimeout": 3,  # Minutes
+                "proxyTestTimeout": 1,  # Seconds
                 "status": True
             })
             doc = mongo.db.configurations.find_one({'_id': result.inserted_id})

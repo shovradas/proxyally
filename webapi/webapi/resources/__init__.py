@@ -1,2 +1,7 @@
 
-__all__ = ['configuration', 'proxy', 'provider', 'testurl', 'user']
+__all__ = [
+    'configuration',
+    'proxy',
+    'provider',
+    'testurl'
+]

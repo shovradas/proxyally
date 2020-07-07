@@ -10,7 +10,7 @@ from config import DEBUG
 class ProxyScrapSpider(scrapy.Spider):
     name = 'freeproxylistsnet'
     page_number=2
-    max_page=3
+    max_page=5
 
     def start_requests(self):
         if DEBUG:
@@ -43,7 +43,10 @@ class ProxyScrapSpider(scrapy.Spider):
                 yield response.follow(next_page, callback=self.parse)
 
 
-def fetch():
+def fetch(config):
+    ProxyScrapSpider.custom_settings = {
+        'DOWNLOAD_DELAY': config['downloadDelay']
+    }
     # core.proxy_fetchers.proxydashlistdownload.ProxyApiSpider
     spider = '.'.join([__name__, ProxyScrapSpider.__name__])
     data = os.popen(f'python {os.getcwd()}/core/proxy_fetchers/fetch.py {spider}').read()

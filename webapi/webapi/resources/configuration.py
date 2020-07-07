@@ -27,12 +27,16 @@ class Configuration(Resource):
         return '', 204
 
     @use_args(configuration_schema, location='json_or_form')
-    def put(self, args, id):
+    def put(self, configuration_new, id):
         util.abort_if_invalid_id_format(id)
-        doc = mongo.db.configurations.find_one({'_id': ObjectId(id)})
-        util.abort_if_doesnt_exist(doc)
-        result = mongo.db.configurations.update_one({ '_id': ObjectId(id) }, { '$set': args })
-        if result.modified_count !=0 and args['status']:
+        configuration = mongo.db.configurations.find_one({'_id': ObjectId(id)})
+        util.abort_if_doesnt_exist(configuration)
+
+        for k, v in configuration_new.items():
+            configuration[k] = v
+
+        result = mongo.db.configurations.update_one({ '_id': ObjectId(id) }, { '$set': configuration })
+        if result.modified_count !=0 and configuration['status']:
             mongo.db.configurations.update_many({'_id': {'$ne': ObjectId(id)}}, {'$set': {'status': False}})
 
         return '', 204
@@ -52,3 +56,25 @@ class ConfigurationList(Resource):
         if doc and args['status']:
             mongo.db.configurations.update_many({'_id': {'$ne': ObjectId(doc['_id'])}}, {'$set': {'status': False}})
         return configuration_schema.dump(doc), 201, {'location': url_for('configuration', id=f'{result.inserted_id}')}
+
+
+@api.resource('/api/v1/configurations/current')
+class ConfigurationCurrent(Resource):
+    def get(self):
+        doc = mongo.db.configurations.find_one({'status': True})
+        util.abort_if_doesnt_exist(doc)
+        return configuration_schema.dump(doc)
+
+    @use_args(configuration_schema, location='json_or_form')
+    def put(self, configuration_new):
+        configuration = mongo.db.configurations.find_one({'status': True})
+        util.abort_if_doesnt_exist(configuration)
+
+        for k, v in configuration_new.items():
+            configuration[k] = v
+
+        result = mongo.db.configurations.update_one({'_id': configuration['_id']}, {'$set': configuration})
+        if result.modified_count != 0 and configuration['status']:
+            mongo.db.configurations.update_many({'_id': {'$ne': configuration['_id']}}, {'$set': {'status': False}})
+
+        return '', 204

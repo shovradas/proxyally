@@ -1,5 +1,5 @@
 
-from marshmallow import fields, post_dump
+from marshmallow import fields, post_dump, ValidationError
 from flask_restful import abort
 from bson.objectid import ObjectId
 

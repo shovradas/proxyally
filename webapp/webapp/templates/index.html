@@ -3,6 +3,13 @@
 {% block sidebar_right %}
 <div class="my-md-5 py-md-5"></div>
 <div class="mb-3">
+    <div class="list-group-item bg-proxyally-light">
+        <div class="custom-control custom-checkbox">
+            <input type="checkbox" class="custom-control-input" id="allProviderCheckBox" name="allProviderCheckBox" onchange="$('#providerList :checkbox').prop('checked', $(this).prop('checked')); populateUi()">
+            <label class="custom-control-label" for="allProviderCheckBox">Providers</label>
+        </div>
+    </div>
+
     <ul class="list-group" id="providerList">
         <!--<li class="list-group-item d-flex justify-content-between align-items-center">
             <div class="custom-control custom-checkbox">
@@ -22,36 +29,26 @@
     <div id="anonymities">
         <div class="bg-proxyally-light px-3 py-2 mb-2">
             <div class="custom-control custom-checkbox">
-                <input type="checkbox" class="custom-control-input" id="transparent" name="transparent" value="Transparent">
+                <input type="checkbox" class="custom-control-input" id="transparent" name="transparent" value="Transparent" checked>
                 <label class="custom-control-label" for="transparent">Transparent</label>
             </div>
         </div>
         <div class="bg-proxyally-light px-3 py-2 mb-2">
             <div class="custom-control custom-checkbox">
-                <input type="checkbox" class="custom-control-input" id="anonymous" name="anonymous" value="Anonymous">
+                <input type="checkbox" class="custom-control-input" id="anonymous" name="anonymous" value="Anonymous" checked>
                 <label class="custom-control-label" for="anonymous">Anonymous</label>
+            </div>
+        </div>
+        <div class="bg-proxyally-light px-3 py-2 mb-2">
+            <div class="custom-control custom-checkbox">
+                <input type="checkbox" class="custom-control-input" id="elite" name="elite" value="Elite" checked>
+                <label class="custom-control-label" for="elite">Elite</label>
             </div>
         </div>
         <div class="bg-proxyally-light px-3 py-2 mb-3">
             <div class="custom-control custom-checkbox">
-                <input type="checkbox" class="custom-control-input" id="elite" name="elite" value="Elite">
-                <label class="custom-control-label" for="elite">Elite</label>
-            </div>
-        </div>
-    </div>
-
-    <label for="protocol">Protocol</label>
-    <div id="protocol">
-        <div class="bg-proxyally-light px-3 py-2 mb-2">
-            <div class="custom-control custom-checkbox">
-                <input type="checkbox" class="custom-control-input" id="http" name="http" value="http">
-                <label class="custom-control-label" for="transparent">HTTP</label>
-            </div>
-        </div>
-        <div class="bg-proxyally-light px-3 py-2 mb-2">
-            <div class="custom-control custom-checkbox">
-                <input type="checkbox" class="custom-control-input" id="http" name="http" value="http">
-                <label class="custom-control-label" for="anonymous">HTTPS</label>
+                <input type="checkbox" class="custom-control-input" id="unknown" name="unknown" value="Unknown" checked>
+                <label class="custom-control-label" for="unknown">Unknown</label>
             </div>
         </div>
     </div>
@@ -62,14 +59,14 @@
 {% block content %}
 <nav class="navbar navbar-expand-sm navbar-dark bg-proxyally py-1 mb-3">
     <ul class="navbar-nav">
+{#        <li class="nav-item">#}
+{#            <a class="nav-link text-white" href="#"><i class="fas fa-save"></i> Save As</a>#}
+{#        </li>#}
+{#        <li class="nav-item">#}
+{#            <a class="nav-link text-white" href="#"><i class="fas fa-file-import"></i> Import</a>#}
+{#        </li>#}
         <li class="nav-item">
-            <a class="nav-link text-white" href="#"><i class="fas fa-save"></i> Save As</a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link text-white" href="#"><i class="fas fa-file-import"></i> Import</a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link text-white" href="#" onclick="exportProxies()"><i class="fas fa-file-export"></i> Export</a>
+            <a class="nav-link text-white" onclick="exportProxies()"><i class="fas fa-file-export"></i> Export</a>
         </li>
     </ul>
 </nav>
@@ -77,17 +74,19 @@
     <div class="flex-fill d-flex my-3">
         <span class="py-1">Show</span>
         <select id="limit" name="limit" class="custom-select w-25 mx-2">
-            <option value="5" selected>5</option>
-            <option value="10">10</option>
-            <option value="15">15</option>
+            <option value="10" selected>10</option>
+            <option value="25">25</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+            <option value="500">500</option>
         </select>
         <span class="py-1">entries</span>
     </div>
     <div class="flex-fill my-3 text-md-center">
-        <a class="btn" href="#" onclick="$('#dataTable .collapse').collapse('hide')">
+        <a class="btn" onclick="$('#dataTable .collapse').collapse('hide');">
             <i class="fas fa-compress-arrows-alt"></i> Minimal
         </a>
-        <a class="btn" href="#" onclick="$('#dataTable .collapse').collapse('show')">
+        <a class="btn" onclick="$('#dataTable .collapse').collapse('show')">
             <i class="fas fa-expand-arrows-alt"></i> Expanded
         </a>
     </div>
@@ -107,27 +106,27 @@
         <table class="table table-hover" id="dataTable">
             <thead>
                 <tr>
-                    <th>
-                        Proxy
+                    <th onclick="sort(this, 'ip')" class="link-proxyally">
+                        Proxy <i class="fas fa-sort"></i>
                     </th>
-                    <th>
-                        Anonymity
+                    <th onclick="sort(this, 'anonymity')" class="link-proxyally">
+                        Anonymity <i class="fas fa-sort"></i>
                     </th>
-                    <th>
-                        Last Checked
+                    <th onclick="sort(this, 'funcTestDate')" class="link-proxyally">
+                        Last Checked <i class="fas fa-sort"></i>
                     </th>
-                    <th>
-                        Last Found
+                    <th onclick="sort(this, 'lastFoundDate')" class="link-proxyally">
+                        Last Found <i class="fas fa-sort"></i>
                     </th>
-                    <th>
-                        First Discoverd
+                    <th onclick="sort(this, 'discoveredDate')" class="link-proxyally">
+                        First Discovered <i class="fas fa-sort"></i>
                     </th>
-                    <th>
-                        Provider
+                    <th onclick="sort(this, 'providerId')" class="link-proxyally">
+                        Provider <i class="fas fa-sort"></i>
                     </th>
                 </tr>
             </thead>
-            <tbody id="proxyList">
+            <tbody>
                 <tr>
                     <td colspan="6" class="text-md-center py-5">
                         <div class="spinner-border"></div>
@@ -160,18 +159,21 @@
 <script src="/static/lib/datatables/jquery.dataTables.min.js"></script>
 <script src="/static/lib/datatables/dataTables.bootstrap4.min.js"></script>
 <script>
-    var urlApp = 'http://localhost:5000';
+    var urlProxies = [API_ROOT, '/proxies'].join('');
+    var urlProviders = [API_ROOT, '/providers'].join('');
 
-    var urlProxies = 'http://localhost:5001/api/v1/proxies';    
     var queryParams = {
         embed: true,
         offset: 0
     };
 
-    function getQueryString() {
+    function getQueryString(paramObj=null) {
+        if(paramObj==null)
+            paramObj = queryParams;
+
         var params = [];
-        for (var key in queryParams) {
-            var param = key + '=' + queryParams[key]
+        for (var key in paramObj) {
+            var param = key + '=' + paramObj[key]
             params.push(param);
         }
         return params.join('&');
@@ -186,45 +188,75 @@
             + '</tr>');
     }
 
-    function generateProviderCheckboxElement(id, name, proxy_count) {
-        checked = proxy_count > 0 ? 'checked' : ''
-        checkbox = $('<div class= "custom-control custom-checkbox">'
-            + '<input type="checkbox" class="custom-control-input" id="' + id + '" name="' + id + '" value="' + id + '" ' + checked + ' onchange="filterByProvider()">'
-            + '<label class="custom-control-label" for="' + id + '">' + name + '</label>'
-            + '</div>'
-            + '<span class="badge badge-light badge-proxally-light badge-pill">' + proxy_count + '</span>'
-        );
-        return checkbox;
+    function sort(th, sortField){
+        queryParams.sort = sortField;
+
+        if(queryParams.hasOwnProperty('order')){
+            queryParams.order *= -1;
+        } else{
+            queryParams.order = 1;
+        }
+
+        $(th).parent().find('i').prop('class', 'fas fa-sort');
+        if(queryParams.order==1){
+            $(th).find('i').prop('class', 'fas fa-sort-up');
+        }
+        else{
+            $(th).find('i').prop('class', 'fas fa-sort-down');
+        }
+        populateUi();
     }
 
-    function generatePaginationElements(totalCount) {
+
+    function populatePagination(totalCount) {
+        queryParams.offset = 0;
         var limit = parseFloat($('#limit').val());
         totalCount = parseFloat(totalCount);
         var uls = $('.pagination').html('');
 
-        li = $('<li class="page-item ml-md-auto"><a class="page-link" href="#" onclick="paginate(this, ' + totalCount + ')">Previous</a></li>');
+        li = $('<li class="page-item ml-md-auto"><a class="page-link" href="javascript:void(0)" onclick="paginate(this, ' + totalCount + ')">Previous</a></li>');
         uls.append(li);
 
         totalCount = Math.ceil(totalCount / limit) * limit;
         for (var offset = 0; offset < totalCount; offset += limit) {
-            li = $('<li class="page-item"><a class="page-link" href="#" onclick="paginate(this, ' + totalCount + ')">' + ((offset / limit) + 1) + '</a></li>');
+            li = $('<li class="page-item"><a class="page-link" href="javascript:void(0)" onclick="paginate(this, ' + totalCount + ')">' + ((offset / limit) + 1) + '</a></li>');
             uls.append(li);
         }
 
-        li = $('<li class="page-item"><a class="page-link" href="#" onclick="paginate(this, ' + totalCount + ')">Next</a></li>');
+        formatPagination(uls.first(), 1);
+        formatPagination(uls.last(), 1);
+
+        li = $('<li class="page-item"><a class="page-link" href="javascript:void(0)" onclick="paginate(this, ' + totalCount + ')">Next</a></li>');
         uls.append(li);
+    }
+
+
+    function formatPagination(ul, index){
+        ul.children().removeClass('active');
+        ul.children().eq(index).addClass('active');
+
+        ul.children().hide();
+        ul.children().first().show();
+        ul.children().first().next().show();
+
+        ul.children().eq(index).prev().show();
+        ul.children().eq(index).show();
+        ul.children().eq(index).next().show();
+
+        ul.children().last().prev().show();
+        ul.children().last().show();
     }
 
     function paginate(pageLink, totalCount) {
         var limit = parseInt($('#limit').val());
+
         if ($(pageLink).text() === 'Next') {
-            console.log(queryParams.offset + limit, totalCount);
             if (queryParams.offset + limit > totalCount - limit) {
                 return;
             }
             queryParams.offset += limit;
         } else if ($(pageLink).text() === 'Previous') {
-            if (queryParams.offset == 0) {
+            if (queryParams.offset <= 0) {
                 return;
             }
             queryParams.offset -= limit;
@@ -232,138 +264,219 @@
         else {
             offset = (parseInt($(pageLink).text()) - 1) * limit;
             queryParams.offset = offset;
-            $(pageLink).parent().addClass('active');
         }
 
-        $.ajax({
+        page = (queryParams.offset / limit) + 1;
+        //console.log(page);
+
+        var ulTop = $('.pagination').first();
+        var ulBottom = $('.pagination').last();
+        formatPagination(ulTop, page);
+        formatPagination(ulBottom, page);
+
+        populateUi(false, false);
+        //populateEntryStatistics(offset, limit, totalCount)
+
+        /*$.ajax({
             url: urlProxies + '?' + getQueryString(),
             success: function (data) { populateProxyList(data.items); },
             error: function (err) { window.alert('Error :: ' + err.statusText); }
+        });*/
+    }
+
+    function generateProviderCheckboxElement(id, name, proxy_count) {
+        checked = proxy_count > 0 ? 'checked' : ''
+        checkbox = $('<div class= "custom-control custom-checkbox">'
+            + '<input type="checkbox" class="custom-control-input" id="' + id + '" name="' + id + '" value="' + id + '" ' + checked + ' onchange="filterByProvider(this)">'
+            + '<label class="custom-control-label" for="' + id + '">' + name + '</label>'
+            + '</div>'
+            + '<span class="badge badge-light badge-proxally-light badge-pill">' + proxy_count + '</span>'
+        );
+        return checkbox;
+    }
+
+    function populateProviders() {
+        var ul = $('#providerList').html('')
+
+        //providers_flattened = []
+        //for (var i in proxies)
+        //    providers_flattened.push(proxies[i].provider)
+
+        //providers = _.indexBy(providers_flattened, 'id');
+        //proxy_counts = _.countBy(providers_flattened, 'id');
+        $.ajax({
+            url: urlProviders,
+            success: function (data) {
+                providers = data.items;
+                for (var i in providers) {
+                    provider = providers[i];
+                    //proxy_count = proxy_counts.hasOwnProperty(provider.id)? proxy_counts[provider.id] : 0;
+                    checkbox = generateProviderCheckboxElement(provider.id, provider.name, provider.proxyCount);
+                    li = $('<li></li>').addClass('list-group-item d-flex justify-content-between align-items-center')
+                    ul.append(li.append(checkbox));
+                }
+            },
+            error: function (err) { console.log('Error :: ' + err.statusText); }
         });
     }
 
-    function populateProviders(proxies) {
-        var ul = $('#providerList').html('')
-
-        providers_flattened = []
-        for (var i in proxies)
-            providers_flattened.push(proxies[i].provider)
-
-        providers = _.indexBy(providers_flattened, 'id');
-        proxy_count = _.countBy(providers_flattened, 'id');
-        for (var i in providers) {
-            provider = providers[i];
-            li = $('<li></li>').addClass('list-group-item d-flex justify-content-between align-items-center')
-            li.append(generateProviderCheckboxElement(provider.id, provider.name, proxy_count[i]))
-            ul.append(li);
-        }
-    }
-
     function populateProxyList(proxies) {
-        var tbody = $('#proxyList').html('');
+        {#alert(proxies.length);#}
+        var tbody = $('#dataTable tbody').html('');
+
+        if(proxies.length == 0){
+            tbody.append('<tr><td colspan="6" class="text-center text-secondary py-5">- No Record to Display -</td></tr>');
+            return;
+        }
+
         for (var i in proxies) {
             proxy = proxies[i]
-            var row = $('<tr style="cursor: pointer" onclick="$(this).next().collapse(\'toggle\')"></tr>');
+            var row = $('<tr style="cursor: pointer" onclick="$(this).next(\'.collapse\').collapse(\'toggle\')"></tr>');
 
-            a = $('<a></a>').html('<i class="fas fa-server fa-xs"></i> <b>' + proxy.ip + ':' + proxy.port + '</b>');
-            a.attr('href', [urlApp, '/proxy/details/', proxy.id].join(''));
+            var a = $('<a></a>').html('<i class="fas fa-server fa-xs"></i> <b>' + proxy.ip + ':' + proxy.port + '</b>');
+            a.attr('href', [APP_ROOT, '/proxy/details/', proxy.id].join(''));
             row.append($('<td></td>').html(a));
-
-            row.append($('<td></td>').text(proxy.anonymity));
-            row.append($('<td></td>').text($.timeago(proxy.funcTestDate)));
-            row.append($('<td></td>').text($.timeago(proxy.lastFoundDate)));
-            row.append($('<td></td>').text($.timeago(proxy.discoveredDate)));
+            row.append($('<td></td>').html(proxy.anonymity? proxy.anonymity: '<span class="pl-3">-<span>'));
+            row.append($('<td></td>').html(proxy.funcTestDate? $.timeago(proxy.funcTestDate): '<span class="pl-3">-<span>'));
+            row.append($('<td></td>').html($.timeago(proxy.lastFoundDate)));
+            row.append($('<td></td>').html($.timeago(proxy.discoveredDate)));
 
             a = $('<a></a>').text(proxy.provider.name);
-            a.attr('href', [urlApp, '/provider/details/', proxy.provider.id].join(''));
+            a.attr('href', [APP_ROOT, '/provider/details/', proxy.provider.id].join(''));
             row.append($('<td></td>').html(a));
 
             tbody.append(row);
-
             if (proxy.testurls.length) {
                 row = $('<tr class="bg-light collapse show"></tr>');
                 var col = $('<td colspan="6"></td>');
 
-                var content = '<small>Tested:<br/>';
+                var div = $('<div class="small"></div>').append('Tested: ');
+                var table = $('<table class="table-zero table-borderless"></table>');
                 for (var j in proxy.testurls) {
-                    testurl = proxy.testurls[j];
-                    content += $.timeago(proxy.testurls[j].urlFuncTestDate) + ' @ (<a href="' + [urlApp, '/testurl/details/', testurl.id].join('') + '">' + proxy.testurls[j].url + ')</a><br/>';
+                    var testurl = proxy.testurls[j];
+                    var tr = $('<tr></tr>');
+
+                    var vDate = $('<span></span>').html($.timeago(testurl.validationTestDate))
+                    tr.append($('<td></td>').append(vDate));
+
+                    vStatus = $('<span class="badge bg-proxyally-light"></span>').html(testurl.validationTestStatus)
+                    tr.append($('<td></td>').append(vStatus));
+
+                    var a = $('<a></a>').html('(' + testurl.url + ')')
+                    a.attr('href', [APP_ROOT, '/testurl/details/', testurl.id].join(''))
+                    tr.append($('<td></td>').append('@ ', a));
+
+                    table.append(tr);
                 }
-                content += "</small>";
-                col.html(content);
-                tbody.append(row.append(col));
+                tbody.append(row.append(col.append(div.append(table))));
             }
-
         }
-
-        $('#entryStatistics').html(proxies.length + ' out of 14');
-        generatePaginationElements(14);
     }
 
-    function populateAnonymity(proxies) {
+    /*function populateAnonymity(proxies) {
         anonymities = _.countBy(proxies, 'anonymity');
         $('#anonymities input[type=checkbox]').each(function () {
             this.checked = true ? anonymities[this.value] > 0 : false;
         });
+    }*/
+
+    function populateEntryStatistics(offset, limit, totalCount) {
+        var entry_from = offset;
+        var entry_to = parseInt(offset)+parseInt(limit)<totalCount ? parseInt(offset)+parseInt(limit): totalCount;
+        $('#entryStatistics').html(entry_from + ' to ' + entry_to + ' out of ' + totalCount);
     }
 
-    function populateUi(updateProviderList = true) {
-        queryParams.limit = $('#limit').val();
-        $.ajax({
-            url: urlProxies + '?' + getQueryString(),
-            success: function (data) {
-                if (updateProviderList)
-                    populateProviders(data.items);
-                populateProxyList(data.items);
-                populateAnonymity(data.items);
-            },
-            error: function (err) { window.alert('Error :: ' + err.statusText); }
-        });
-    }
-
-    function filterByProvider() {
-        showLoading();
-
-        providers = []
-        $('#providerList input:checked').each(function () {
-            providers.push($(this).attr('value'));
-        });
-        queryParams.providers = providers.length ? providers.join(',') : '';
-
-        populateUi(false);
-    }
-
-    function exportProxies() {
-        var text = "hello world",
-            blob = new Blob([text], { type: 'text/plain' }),
-            anchor = document.createElement('a');
-
-        anchor.download = "hello.txt";
-        anchor.href = (window.webkitURL || window.URL).createObjectURL(blob);
-        anchor.dataset.downloadurl = ['text/plain', anchor.download, anchor.href].join(':');
-        anchor.click();
-    }
-
-    $(function () {
-        populateUi();
-
-        $('#anonymities :checkbox').change(function () {
-            anonymities = []
+    function populateUi(init=false, reloadPagination=true) {
+        if (!init){
+            var anonymities = []
             $('#anonymities input:checked').each(function () {
                 anonymities.push($(this).attr('value'));
             });
-            queryParams.anonymities = anonymities.join(',');
-            delete queryParams.providers;
+            if(anonymities.length) {
+                queryParams.anonymities = anonymities.join(',');
+            } else{
+                //delete queryParams.anonymities;
+                queryParams.anonymities = 'None';
+            }
 
-            populateUi();
-        });
+            var providers = []
+            $('#providerList input:checked').each(function () {
+                providers.push($(this).attr('value'));
+            });
+            if(providers.length) {
+                queryParams.providers = providers.join(',');
+            } else{
+                //delete queryParams.providers;
+                queryParams.providers = 'None';
+            }
+        }
 
-        $('#limit').change(function () {
-            delete queryParams.offset;
-            delete queryParams.providers;
-            queryParams.limit = $('#limit').val();
-            populateUi();
+        queryParams.limit = $('#limit').val();
+
+        $.ajax({
+            url: urlProxies + '?' + getQueryString(),
+            success: function (data) {
+                populateProxyList(data.items);
+                //populateAnonymity(data.items);
+                if (reloadPagination) {
+                    populatePagination(data.totalCount);
+                }
+                populateEntryStatistics(queryParams.offset, queryParams.limit, data.totalCount);
+            },
+            error: function (err) { console.log('Error :: ' + err.statusText); }
         });
+    }
+
+    function filterByProvider(elem){
+        checkedCheckBoxCount = $('#providerList input:checked').length;
+        totalCheckBoxCount = $('#providerList input').length;
+
+        if(checkedCheckBoxCount == totalCheckBoxCount){
+            $('#allProviderCheckBox').prop('checked', true);
+        } else{
+            $('#allProviderCheckBox').prop('checked', false);
+        }
+        populateUi();
+    }
+
+    $(function () {
+        populateProviders();
+        populateUi(true);
+
+        $('#providerList :checkbox').click(function () {
+            //populateUi();
+            //alert('here');
+        });
+        $('#anonymities :checkbox').change(function () { populateUi(); });
+        $('#limit').change(function () { populateUi(); });
     });
+
+    function exportProxies() {
+        paramObj = Object.assign({}, queryParams);
+        delete paramObj.limit;
+        delete paramObj.offset;
+        delete paramObj.embed;
+
+        $.ajax({
+            url: urlProxies + '?' + getQueryString(paramObj),
+            success: function (data) {
+                var proxies_to_export = [];
+                for(i in data.items){
+                    proxy = data.items[i];
+                    proxies_to_export.push(proxy.ip + ':' + proxy.port);
+                }
+
+                var text = proxies_to_export.join('\r\n'),
+                    blob = new Blob([text], { type: 'text/plain' }),
+                    anchor = document.createElement('a');
+
+                anchor.download = "proxy-list.txt";
+                anchor.href = (window.webkitURL || window.URL).createObjectURL(blob);
+                anchor.dataset.downloadurl = ['text/plain', anchor.download, anchor.href].join(':');
+                anchor.click();
+            },
+            error: function (err) { console.log('Error :: ' + err.statusText); }
+        });
+    }
 </script>
 {% endblock %}

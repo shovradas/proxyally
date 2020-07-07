@@ -81,6 +81,9 @@ body {
     background-color: rgba(0, 95, 80, 0.1) !important
 }
 
+.bg-proxyally-5 {
+    background-color: rgba(0, 95, 80, 0.5) !important
+}
 
 .text-proxyally {
     color: #005F50 !important
@@ -98,7 +101,8 @@ body {
     }
 
 .link-proxyally:hover {
-    text-decoration: none !important
+    text-decoration: none !important;
+    cursor: pointer;
 }
 
 
@@ -185,4 +189,17 @@ body {
 
 .custom-control-input:focus:not(:checked) ~ .custom-control-label::before {
     border-color: rgba(0, 95, 80, 0.5);
+}
+
+
+/* ---------------------------------------- */
+.spinner-border-md {
+  width: 1.3rem;
+  height: 1.3rem;
+}
+
+
+.table-zero tr td{
+  padding: 0.065rem !important;
+  margin: 0 !important;
 }
