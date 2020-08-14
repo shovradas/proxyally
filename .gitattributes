@@ -1,2 +1,2 @@
 webapp/webapp/static/lib/* linguist-vendored
-webapp/webapp/templates/* linguist-vendored
+*.html linguist-vendored
