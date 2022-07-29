@@ -4,5 +4,5 @@ Flask-PyMongo==2.3.0
 Flask-Cors==3.0.8
 flask-marshmallow==0.13.0
 webargs==6.1.0
-Scrapy==2.1.0
+Scrapy==2.6.2
 pycurl==7.43.0.5
